@@ -82,13 +82,16 @@
   <section>
     <h2>Filmy</h2>
     <div class="filters">
-      <input id="f-year" placeholder="Rok (např. 2023)" type="number" />
-      <input id="f-rating" placeholder="Min. hodnocení (0–10)" type="number" step="0.1" />
+      <select id="f-year"><option value="">Všechny roky</option></select>
+      <select id="f-rating"><option value="">Min. hodnocení</option></select>
       <select id="f-genre"><option value="">Všechny žánry</option></select>
       <select id="f-sort">
-        <option value="rating">Hodnocení ↓</option>
-        <option value="year">Rok ↓</option>
-        <option value="title">Název A–Z</option>
+        <option value="rating|desc">Hodnocení ↓</option>
+        <option value="rating|asc">Hodnocení ↑</option>
+        <option value="year|desc">Rok ↓</option>
+        <option value="year|asc">Rok ↑</option>
+        <option value="title|asc">Název A–Z</option>
+        <option value="title|desc">Název Z–A</option>
       </select>
       <button onclick="loadFilms()">Filtrovat</button>
       <button onclick="randomFilm()" class="btn btn-blue">🎲 Náhodný film</button>
@@ -180,8 +183,10 @@ async function loadFilms() {
   const year    = document.getElementById("f-year").value;
   const rating  = document.getElementById("f-rating").value;
   const genre   = document.getElementById("f-genre").value;
-  const sort    = document.getElementById("f-sort").value;
-  let url = `${API}/films?sort=${sort}`;
+  const sortVal = document.getElementById("f-sort").value.split("|");
+  const sort    = sortVal[0];
+  const order   = sortVal[1] || 'desc';
+  let url = `${API}/films?sort=${sort}&order=${order}`;
   if (year) url += `&year=${year}`;
   if (rating) url += `&min_rating=${rating}`;
   if (genre) url += `&genre=${encodeURIComponent(genre)}`;
@@ -211,7 +216,12 @@ async function moodMatch() {
 }
 
 async function randomFilm() {
-  const film = await fetch(`${API}/films/random`).then(r => r.json());
+  const year = document.getElementById("f-year").value;
+  const rating = document.getElementById("f-rating").value || 0;
+  const url = `${API}/films/random?min_rating=${rating}` + (year ? `&year=${year}` : '');
+  const resp = await fetch(url);
+  if (!resp.ok) { alert('Žádný film nenalezen'); return; }
+  const film = await resp.json();
   openModal(film.id);
 }
 
@@ -369,6 +379,18 @@ fetch(`${API}/genres`).then(r => r.json()).then(genres => {
   const sel = document.getElementById("f-genre");
   genres.forEach(g => sel.innerHTML += `<option value="${g.name}">${g.name}</option>`);
 });
+
+// Načti dostupné roky a hodnocení pro selecty
+fetch(`${API}/options`).then(r => r.json()).then(opts => {
+  const years = opts.years || [];
+  const yrSel = document.getElementById('f-year');
+  years.forEach(y => yrSel.innerHTML += `<option value="${y}">${y}</option>`);
+
+  const ratings = opts.ratings || [];
+  const rSel = document.getElementById('f-rating');
+  rSel.innerHTML = `<option value="">Min. hodnocení</option>`;
+  ratings.forEach(r => rSel.innerHTML += `<option value="${r}">${r}</option>`);
+}).catch(()=>{});
 
 // Spusť domovskou stránku
 showSection("home");
