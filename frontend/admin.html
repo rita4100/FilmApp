@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FilmApp - Admin</title>
+    <link rel="stylesheet" href="/static/style.css">
+  </head>
+  <body>
+    <header>
+      <h1>🎬 FilmApp</h1>
+      <nav>
+        <a href="/">Domů</a>
+        <a href="/top10.html">Top 10</a>
+        <a href="/watchlist.html">Watchlist</a>
+        <a href="/mood.html">Mood Matcher</a>
+        <a href="/admin.html" id="admin-link" style="display:none">Admin</a>
+      </nav>
+    </header>
+    <div class="container">
+      <section>
+        <h2>⚙️ Admin panel</h2>
+        <h3 style="margin:16px 0 8px">Uživatelé</h3>
+        <div id="admin-users"></div>
+        <h3 style="margin:24px 0 8px">Přidat film</h3>
+        <div style="background:#1a1a2e;padding:20px;border-radius:10px;max-width:500px">
+          <input id="a-title" placeholder="Název" style="width:100%;padding:8px;margin:4px 0;background:#0f3460;border:none;color:#eee;border-radius:6px">
+          <input id="a-year" placeholder="Rok" style="width:100%;padding:8px;margin:4px 0;background:#0f3460;border:none;color:#eee;border-radius:6px">
+          <textarea id="a-desc" placeholder="Popis" style="width:100%;padding:8px;margin:4px 0;background:#0f3460;border:none;color:#eee;border-radius:6px;height:80px"></textarea>
+          <input id="a-rating" placeholder="Hodnocení (0–10)" style="width:100%;padding:8px;margin:4px 0;background:#0f3460;border:none;color:#eee;border-radius:6px">
+          <button class="btn btn-red" onclick="adminAddFilm()">Přidat film</button>
+        </div>
+      </section>
+    </div>
+    <script src="/static/app.js"></script>
+    <script>document.addEventListener('DOMContentLoaded', ()=>loadAdmin());</script>
+  </body>
+</html>

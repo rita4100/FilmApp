@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FilmApp - Mood Matcher</title>
+    <link rel="stylesheet" href="/static/style.css">
+  </head>
+  <body>
+    <header>
+      <h1>🎬 FilmApp</h1>
+      <nav>
+        <a href="/">Domů</a>
+        <a href="/top10.html">Top 10</a>
+        <a href="/watchlist.html">Watchlist</a>
+        <a href="/mood.html">Mood Matcher</a>
+        <a href="/admin.html" id="admin-link" style="display:none">Admin</a>
+      </nav>
+    </header>
+    <div class="container">
+      <section>
+        <h2>🧠 Mood Matcher</h2>
+        <div class="mood-box">
+          <p style="margin-bottom:12px">Napiš náladu nebo klíčová slova (např. "romantika Paříž" nebo "akce vesmír"):</p>
+          <input id="mood-input" placeholder="Tvá nálada..." />
+          <button class="btn btn-red" onclick="moodMatch()">Najít filmy</button>
+        </div>
+        <div class="films-grid" id="mood-grid"></div>
+      </section>
+    </div>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
