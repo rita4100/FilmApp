@@ -95,6 +95,7 @@ async function openModal(id) {
       <p style="color:#aaa;margin:6px 0">${film.year || ''} &nbsp; ⭐ ${(film.rating||0).toFixed(1)}</p>
       <div>${(film.genres||[]).map(g=>`<span class="badge">${g}</span>`).join('')}</div>
       <p style="margin-top:12px;font-size:.9rem;color:#ccc">${film.description||''}</p>
+      ${film.trailer_key ? `<iframe width="100%" height="400" src="https://www.youtube.com/embed/${film.trailer_key}" frameborder="0" allowfullscreen></iframe>` : ''}
       ${film.czdb ? `<div style="margin-top:10px;padding:8px;background:#071b2b;border-radius:6px">
         <strong>CZDB:</strong>
         <div style="font-size:.95rem;margin-top:6px">${film.czdb.title || film.czdb.name || ''} ${film.czdb.year?`(${film.czdb.year})`:''}</div>

@@ -25,6 +25,7 @@ nav a:hover { color: #e94560; }
 .modal-content { background: #1a1a2e; max-width: 700px; margin: 40px auto; border-radius: 12px; overflow: hidden; }
 .modal-body { display: flex; gap: 20px; padding: 24px; }
 .modal-body img { width: 200px; height: 300px; object-fit: cover; border-radius: 8px; flex-shrink: 0; }
+.modal-body iframe { margin-top: 12px; border-radius: 8px; }
 .modal-close { float: right; background: none; border: none; color: #eee; font-size: 1.4rem; cursor: pointer; padding: 12px; }
 .badge { display: inline-block; background: #e94560; color: #fff; padding: 3px 10px; border-radius: 12px; font-size: .75rem; margin: 3px; }
 .btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; margin: 4px; }
