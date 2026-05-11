@@ -19,14 +19,16 @@ def init_db():
     c.execute("PRAGMA foreign_keys = ON;")
 
     # 1. TABULKA: Filmy (Katalog s externími daty)
+    # Pozn.: přidáme i sloupec `rating` pro kompatibilitu se seed.py (tmdb vote_average -> rating)
     c.execute("""CREATE TABLE IF NOT EXISTS films (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         tmdb_id INTEGER UNIQUE,         -- Unikátní ID pro synchronizaci s TMDb
         title TEXT NOT NULL,
         year INTEGER,
         description TEXT,
-        rating_tmdb REAL,               -- Globální hodnocení z TMDb API
-        rating_czdb REAL,               -- České hodnocení z CZDB API
+        rating REAL DEFAULT 0,          -- Hlavní rating (kompatibilní se seed.py)
+        rating_tmdb REAL,               -- Volitelné: specifické TMDb skóre
+        rating_czdb REAL,               -- Volitelné: skóre z CZDB
         poster_url TEXT,
         trailer_key TEXT                -- ID pro YouTube trailer
     )""")
@@ -52,6 +54,7 @@ def init_db():
         username TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
         role TEXT DEFAULT 'user',        -- Role: 'user' nebo 'admin'
+        banned INTEGER DEFAULT 0,        -- 0 = aktivní, 1 = zablokován
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )""")
 
@@ -101,8 +104,8 @@ def init_db():
     )""")
 
     # Vytvoření výchozího administrátora
-    c.execute("""INSERT OR IGNORE INTO users (username, password, role) 
-                 VALUES ('admin', 'admin123', 'admin')""")
+    c.execute("""INSERT OR IGNORE INTO users (username, password, role, banned) 
+                 VALUES ('admin', 'admin123', 'admin', 0)""")
 
     conn.commit()
     conn.close()
