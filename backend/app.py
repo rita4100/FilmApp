@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, abort
 from flask_cors import CORS
 import sqlite3
 import os
@@ -35,8 +35,12 @@ def get_db():
 def get_films():
     genre    = request.args.get("genre")
     year     = request.args.get("year")
-    min_r    = request.args.get("min_rating", 0)
+    try:
+        min_r = float(request.args.get("min_rating", 0))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid min_rating"}), 400
     sort_by  = request.args.get("sort", "rating")   # rating / year / title
+    order    = request.args.get("order", "desc").lower()  # asc / desc
     page     = int(request.args.get("page", 1))
     per_page = 20
 
@@ -50,14 +54,33 @@ def get_films():
         query += " WHERE 1=1"
 
     if year:
+        # ensure numeric year
+        try:
+            y = int(year)
+            if y < 0:
+                return jsonify({"error": "Year cannot be negative"}), 400
+        except ValueError:
+            return jsonify({"error": "Invalid year"}), 400
         query += " AND f.year = ?"
-        params.append(year)
+        params.append(y)
+
+    if min_r < 0:
+        return jsonify({"error": "min_rating cannot be negative"}), 400
 
     query += " AND f.rating >= ?"
     params.append(min_r)
 
-    allowed_sorts = {"rating": "f.rating DESC", "year": "f.year DESC", "title": "f.title ASC"}
-    query += f" ORDER BY {allowed_sorts.get(sort_by, 'f.rating DESC')}"
+    # build ORDER BY with direction
+    order_sql = "ASC" if order == "asc" else "DESC"
+    if sort_by == "rating":
+        sort_expr = f"f.rating {order_sql}"
+    elif sort_by == "year":
+        sort_expr = f"CAST(f.year AS INTEGER) {order_sql}"
+    elif sort_by == "title":
+        sort_expr = f"f.title COLLATE NOCASE {order_sql}"
+    else:
+        sort_expr = f"f.rating DESC"
+    query += f" ORDER BY {sort_expr}"
     query += f" LIMIT {per_page} OFFSET {(page-1)*per_page}"
 
     conn = get_db()
@@ -67,9 +90,44 @@ def get_films():
 
 @app.route("/films/random", methods=["GET"])
 def random_film():
+    # allow optional filters so random film is chosen from a constrained set
+    genre = request.args.get("genre")
+    year  = request.args.get("year")
+    try:
+        min_r = float(request.args.get("min_rating", 0))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid min_rating"}), 400
+
+    query = "SELECT DISTINCT f.* FROM films f"
+    params = []
+    if genre:
+        query += " JOIN film_genres fg ON f.id = fg.film_id JOIN genres g ON fg.genre_id = g.id WHERE g.name = ?"
+        params.append(genre)
+    else:
+        query += " WHERE 1=1"
+
+    if year:
+        try:
+            y = int(year)
+            if y < 0:
+                return jsonify({"error": "Year cannot be negative"}), 400
+        except ValueError:
+            return jsonify({"error": "Invalid year"}), 400
+        query += " AND f.year = ?"
+        params.append(y)
+
+    if min_r < 0:
+        return jsonify({"error": "min_rating cannot be negative"}), 400
+
+    query += " AND f.rating >= ?"
+    params.append(min_r)
+
+    query += " ORDER BY RANDOM() LIMIT 1"
     conn = get_db()
-    film = conn.execute("SELECT * FROM films ORDER BY RANDOM() LIMIT 1").fetchone()
+    film = conn.execute(query, params).fetchone()
     conn.close()
+    if not film:
+        return jsonify({}), 404
     return jsonify(dict(film))
 
 @app.route("/films/top10", methods=["GET"])
@@ -119,6 +177,50 @@ def get_genres():
     genres = conn.execute("SELECT * FROM genres").fetchall()
     conn.close()
     return jsonify([dict(g) for g in genres])
+
+
+@app.route("/options", methods=["GET"])
+def get_options():
+    """Return available years and rating steps for building UI selects."""
+    conn = get_db()
+    years = conn.execute("SELECT DISTINCT year FROM films WHERE year IS NOT NULL ORDER BY CAST(year AS INTEGER) ASC").fetchall()
+    min_year = None
+    if years:
+        years_list = [int(r["year"]) for r in years if r["year"] and str(r["year"]).isdigit()]
+        if years_list:
+            min_year = min(years_list)
+    ratings = conn.execute("SELECT MIN(rating) as min_r, MAX(rating) as max_r FROM films").fetchone()
+    conn.close()
+    min_r = ratings["min_r"] if ratings and ratings["min_r"] is not None else 0
+    max_r = ratings["max_r"] if ratings and ratings["max_r"] is not None else 10
+    # create rating choices with step 0.5 (or 0.1 if needed)
+    step = 0.5
+    r_choices = []
+    cur = float(min_r)
+    # ensure sensible lower bound: not less than 0
+    if cur < 0:
+        cur = 0.0
+    while cur <= float(max_r):
+        r_choices.append(round(cur, 1))
+        cur += step
+    return jsonify({"years": sorted(list(set([r["year"] for r in years if r["year"] and str(r["year"]).isdigit()] or []))),
+                    "min_year": min_year,
+                    "ratings": r_choices,
+                    "rating_min": max(0, round(float(min_r), 1)),
+                    "rating_max": round(float(max_r), 1)})
+
+
+@app.route("/search", methods=["GET"])
+def search_films():
+    q = request.args.get("q", "").strip()
+    if not q:
+        return jsonify([])
+    conn = get_db()
+    # simple search in title and description
+    like = f"%{q}%"
+    films = conn.execute("SELECT * FROM films WHERE title LIKE ? OR description LIKE ? ORDER BY year DESC LIMIT 50", (like, like)).fetchall()
+    conn.close()
+    return jsonify([dict(f) for f in films])
 
 # ─── USERS ────────────────────────────────────────────────────────────────────
 
@@ -224,11 +326,43 @@ def ban_user(user_id):
 @app.route("/admin/films", methods=["POST"])
 def add_film():
     data = request.json
+    title = (data.get("title") or "").strip()
+    if not title:
+        return jsonify({"error": "Title is required"}), 400
+
+    # validate numeric rating and year
+    try:
+        rating = float(data.get("rating", 0))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid rating"}), 400
+    if rating < 0:
+        return jsonify({"error": "Rating cannot be negative"}), 400
+
+    year = data.get("year")
+    if year is not None:
+        try:
+            year = int(year)
+            if year < 0:
+                return jsonify({"error": "Year cannot be negative"}), 400
+        except (TypeError, ValueError):
+            return jsonify({"error": "Invalid year"}), 400
+
     conn = get_db()
+    # ensure year is not less than the earliest film year in DB (if exists)
+    if year is not None:
+        earliest = conn.execute("SELECT MIN(CAST(year AS INTEGER)) as min_year FROM films WHERE year IS NOT NULL").fetchone()
+        if earliest and earliest["min_year"] is not None:
+            try:
+                min_year = int(earliest["min_year"])
+                if year < min_year:
+                    conn.close()
+                    return jsonify({"error": f"Year cannot be earlier than {min_year}"}), 400
+            except Exception:
+                pass
+
     conn.execute("""INSERT INTO films (title, year, description, rating, poster_url)
                     VALUES (?, ?, ?, ?, ?)""",
-                 (data["title"], data.get("year"), data.get("description"),
-                  data.get("rating", 0), data.get("poster_url", "")))
+                 (title, year, data.get("description"), rating, data.get("poster_url", "")))
     conn.commit()
     conn.close()
     return jsonify({"message": "Film přidán"})
@@ -285,4 +419,13 @@ def stats():
     })
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5003, debug=True)
+    # In some environments (IDEs, threads, Streamlit) the signal API is not
+    # available from non-main threads which causes ValueError when the
+    # werkzeug reloader tries to register signal handlers. Disable the
+    # reloader to avoid this problem. If that still fails, fallback to
+    # non-debug mode.
+    try:
+        app.run(host="0.0.0.0", port=5002, debug=True, use_reloader=False)
+    except ValueError:
+        # fallback without debug/reloader
+        app.run(host="0.0.0.0", port=5002, debug=False)
