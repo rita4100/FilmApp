@@ -5,6 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import sqlite3
 import os
 from dotenv import load_dotenv
+from .db import init_db
+import requests
 
 load_dotenv()
 
@@ -15,6 +17,10 @@ DB_PATH = os.path.join(BASE_DIR, "films.db")
 FRONTEND_DIR = os.path.join(PROJECT_DIR, "frontend")
 
 app = FastAPI()
+
+
+# Ensure DB exists on startup
+init_db()
 
 app.add_middleware(
     CORSMiddleware,
@@ -108,6 +114,28 @@ def get_film(film_id: int):
     result = dict(film)
     result["genres"] = [g[0] for g in genres]
     result["soundtracks"] = [dict(s) for s in soundtracks]
+    # Try to enrich with CZDB lookup (no API key required). If not found or error, skip quietly.
+    try:
+        czdb_base = os.environ.get('CZDB_API', 'http://api.czdb.cz')
+        # search by title and year for better match
+        q = result.get('title', '')
+        y = result.get('year')
+        params = {'q': q}
+        if y:
+            params['y'] = y
+        r = requests.get(fz := f"{czdb_base}/search", params=params, timeout=5)
+        if r.status_code == 200:
+            data = r.json()
+            # CZDB returns false when not found
+            if data and data is not False:
+                # If it's a list of results, attach first match; if full detail, attach it
+                if isinstance(data, list):
+                    result['czdb'] = data[0] if data else None
+                else:
+                    result['czdb'] = data
+    except Exception:
+        # ignore CZDB errors, don't break API
+        result['czdb'] = None
     conn.close()
     return result
 
