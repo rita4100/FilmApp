@@ -12,6 +12,12 @@ nav a:hover { color: #e94560; }
 .film-card .info { padding: 10px; }
 .film-card .title { font-size: .9rem; font-weight: bold; margin-bottom: 4px; }
 .film-card .rating { color: #f5c518; font-size: .8rem; }
+.films-table { width: 100%; border-collapse: collapse; margin-top: 20px; color: #eee; }
+.films-table th, .films-table td { border: 1px solid #334; padding: 12px 10px; text-align: left; }
+.films-table th { background: #0f3460; }
+.films-table tr:nth-child(even) { background: rgba(255, 255, 255, 0.03); }
+.films-table tr:hover { background: rgba(255, 255, 255, 0.08); }
+.films-table td button { width: auto; padding: 6px 12px; }
 .filters { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
 .filters input, .filters select, .filters button { padding: 8px 14px; border-radius: 6px; border: none; background: #1a1a2e; color: #eee; cursor: pointer; }
 .filters button { background: #e94560; }

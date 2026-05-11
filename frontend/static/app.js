@@ -25,9 +25,15 @@ function renderFilms(gridId, films) {
       <div class="info">
         <div class="title">${f.title}</div>
         <div class="rating">⭐ ${(f.rating || 0).toFixed(1)} &nbsp; 📅 ${f.year || '?'}</div>
+        ${f.trailer_key ? `<button class="btn btn-blue trailer-btn" onclick="event.stopPropagation(); openTrailer('${f.trailer_key}')">Trailer</button>` : ''}
       </div>
     </div>
   `).join('');
+}
+
+function openTrailer(key) {
+  if (!key) return;
+  window.open(`https://www.youtube.com/watch?v=${key}`, '_blank');
 }
 
 async function loadFilms() {

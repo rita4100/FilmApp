@@ -53,7 +53,7 @@ def index():
 @app.get("/films")
 def get_films(genre: str = None, year: int = None, min_rating: float = 0, sort: str = "rating", page: int = 1):
     per_page = 20
-    query = "SELECT DISTINCT f.* FROM films f"
+    query = "SELECT DISTINCT f.id, f.title, f.year, f.description, f.rating, f.poster_url, f.trailer_key FROM films f"
     params = []
     if genre:
         query += " JOIN film_genres fg ON f.id = fg.film_id JOIN genres g ON fg.genre_id = g.id WHERE g.name = ?"
@@ -81,7 +81,7 @@ def get_films(genre: str = None, year: int = None, min_rating: float = 0, sort: 
 @app.get("/films/random")
 def random_film():
     conn = get_db()
-    film = conn.execute("SELECT * FROM films ORDER BY RANDOM() LIMIT 1").fetchone()
+    film = conn.execute("SELECT id, title, year, description, rating, poster_url, trailer_key FROM films ORDER BY RANDOM() LIMIT 1").fetchone()
     conn.close()
     if not film:
         raise HTTPException(status_code=404, detail="No films")
@@ -91,7 +91,7 @@ def random_film():
 @app.get("/films/top10")
 def top10():
     conn = get_db()
-    films = conn.execute("SELECT * FROM films ORDER BY rating DESC LIMIT 10").fetchall()
+    films = conn.execute("SELECT id, title, year, description, rating, poster_url, trailer_key FROM films ORDER BY rating DESC LIMIT 10").fetchall()
     conn.close()
     return [dict(f) for f in films]
 
