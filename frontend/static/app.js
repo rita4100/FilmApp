@@ -25,15 +25,43 @@ function renderFilms(gridId, films) {
       <div class="info">
         <div class="title">${f.title}</div>
         <div class="rating">⭐ ${(f.rating || 0).toFixed(1)} &nbsp; 📅 ${f.year || '?'}</div>
-        ${f.trailer_key ? `<button class="btn btn-blue trailer-btn" onclick="event.stopPropagation(); openTrailer('${f.trailer_key}')">Trailer</button>` : ''}
+        ${f.trailer_key ? `<button class="btn btn-blue trailer-btn" onclick="event.stopPropagation(); openFullscreenTrailer('${f.trailer_key}')">▶ Sledujte trailer</button>` : ''}
       </div>
     </div>
   `).join('');
 }
 
-function openTrailer(key) {
-  if (!key) return;
-  window.open(`https://www.youtube.com/watch?v=${key}`, '_blank');
+function openFullscreenTrailer(key) {
+  const overlay = document.getElementById('fullscreen-trailer');
+  overlay.innerHTML = `
+    <div class="fullscreen-content">
+      <button class="close-btn" onclick="closeFullscreenTrailer()">✕</button>
+      <iframe
+        width="100%"
+        height="100%"
+        src="https://www.youtube.com/embed/${key}?autoplay=1"
+        title="YouTube trailer"
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen>
+      </iframe>
+    </div>
+  `;
+  overlay.style.display = 'flex';
+  document.addEventListener('keydown', handleEsc);
+}
+
+function closeFullscreenTrailer() {
+  const overlay = document.getElementById('fullscreen-trailer');
+  overlay.innerHTML = '';
+  overlay.style.display = 'none';
+  document.removeEventListener('keydown', handleEsc);
+}
+
+function handleEsc(e) {
+  if (e.key === 'Escape') {
+    closeFullscreenTrailer();
+  }
 }
 
 async function loadFilms() {
