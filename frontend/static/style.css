@@ -31,6 +31,7 @@ nav a:hover { color: #e94560; }
 .btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; margin: 4px; }
 .btn-red { background: #e94560; color: #fff; }
 .btn-blue { background: #0f3460; color: #fff; }
+.btn-active { outline: 2px solid #ffd700; box-shadow: 0 0 6px rgba(255,215,0,0.2); }
 section h2 { margin-bottom: 16px; color: #e94560; }
 #login-panel { background: #1a1a2e; padding: 24px; border-radius: 10px; max-width: 360px; margin: 60px auto; }
 #login-panel input { width: 100%; padding: 10px; margin: 8px 0; border-radius: 6px; border: none; background: #0f3460; color: #eee; }

@@ -31,7 +31,8 @@ function renderFilms(gridId, films, append = false) {
       <img src="${f.poster_url || ''}" alt="${f.title}" onerror="this.src='https://via.placeholder.com/180x270?text=No+Image'" />
       <div class="info">
         <div class="title">${f.title}</div>
-        <div class="rating">⭐ ${(f.rating || 0).toFixed(1)} &nbsp; 📅 ${f.year || '?'}</div>
+  <div class="rating">⭐ ${(f.rating || 0).toFixed(1)} &nbsp; 📅 ${f.year || '?'}</div>
+  ${f.status ? `<div style="margin-top:6px"><span class="badge">${f.status === 'want' ? 'Chci vidět' : f.status === 'seen' ? 'Viděl jsem' : f.status === 'fav' ? 'Oblíbené' : ''}</span></div>` : ''}
         ${f.trailer_key ? `<button class="btn btn-blue trailer-btn" onclick="event.stopPropagation(); openFullscreenTrailer('${f.trailer_key}')">▶ Sledujte trailer</button>` : ''}
       </div>
     </div>
@@ -156,14 +157,38 @@ async function randomFilm() { const film = await fetchJson('/films/random'); ope
 
 async function openModal(id) {
   const film = await fetchJson(`/films/${id}`);
+  // determine user's current status for this film (if logged in)
+  let filmStatus = null;
+  if(currentUser){
+    try{
+      const wl = await fetchJson(`/watchlist/${currentUser.id}`);
+      if(Array.isArray(wl)){
+        const match = wl.find(i => i.id === id || i.id === film.id || i.film_id === id || i.film_id === film.id);
+        if(match) filmStatus = match.status;
+      }
+    }catch(e){/* ignore */}
+  }
+
   const body = document.getElementById('modal-body'); if (!body) return;
+  const onWatchlistPage = !!document.getElementById('watchlist-grid');
   body.innerHTML = `
     <img src="${film.poster_url||''}" alt="${film.title}" onerror="this.src='https://via.placeholder.com/200x300?text=No+Image'" />
     <div style="flex:1">
       <h2>${film.title}</h2>
       <p style="color:#aaa;margin:6px 0">${film.year || ''} &nbsp; ⭐ ${(film.rating||0).toFixed(1)}</p>
-  <div>${(film.genres||[]).map(g=>`<span class="badge">${normalizeGenre(g)}</span>`).join('')}</div>
+      <div>${(film.genres||[]).map(g=>`<span class="badge">${normalizeGenre(g)}</span>`).join('')}</div>
       <p style="margin-top:12px;font-size:.9rem;color:#ccc">${film.description||''}</p>
+      <div style="margin-top:10px">
+        ${currentUser ? `
+          <div style="margin-top:8px">
+            <button class="btn wl-btn" data-status="want" onclick="updateWatchlistStatus(${film.id}, 'want')">Chci vidět</button>
+            <button class="btn wl-btn" data-status="seen" onclick="updateWatchlistStatus(${film.id}, 'seen')">Viděl jsem</button>
+            <button class="btn btn-blue wl-btn" data-status="fav" onclick="updateWatchlistStatus(${film.id}, 'fav')">Oblíbené</button>
+            ${onWatchlistPage ? `<button class="btn btn-red wl-btn" data-status="remove" onclick="updateWatchlistStatus(${film.id}, null)">Odebrat</button>` : ''}
+          </div>
+        ` : `<div style="color:#aaa;margin-top:8px">Přihlas se pro správu seznamu</div>`}
+        <div id="modal-status-msg" style="color:#9bd; margin-top:8px"></div>
+      </div>
       ${film.trailer_key ? `<iframe width="100%" height="400" src="https://www.youtube.com/embed/${film.trailer_key}" frameborder="0" allowfullscreen></iframe>` : ''}
       ${film.czdb ? `<div style="margin-top:10px;padding:8px;background:#071b2b;border-radius:6px">
         <strong>CZDB:</strong>
@@ -172,7 +197,36 @@ async function openModal(id) {
         ${film.czdb.url?`<div><a href="${film.czdb.url}" target="_blank">Detail na CZDB</a></div>`:''}
       </div>` : ''}
     </div>`;
+  // set active state on buttons based on filmStatus
+  if(filmStatus){
+    setModalActiveStatus(filmStatus);
+    const msg = document.getElementById('modal-status-msg'); if(msg) msg.textContent = `Stav: ${filmStatus === 'want' ? 'Chci vidět' : filmStatus === 'seen' ? 'Viděl jsem' : filmStatus === 'fav' ? 'Oblíbené' : ''}`;
+  }
   document.getElementById('modal').style.display = 'block';
+}
+
+async function updateWatchlistStatus(filmId, status){
+  if(!currentUser){ alert('Musíš být přihlášen!'); return; }
+  const resp = await fetch('/watchlist', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({user_id: currentUser.id, film_id: filmId, status})});
+  if(!resp.ok){ alert('Chyba při ukládání stavu'); return; }
+  // update modal UI immediately
+  const msg = document.getElementById('modal-status-msg');
+  if(status === null){ if(msg) msg.textContent = 'Odebráno ze seznamu'; setModalActiveStatus(null); }
+  else { if(msg) msg.textContent = `Stav: ${status === 'want' ? 'Chci vidět' : status === 'seen' ? 'Viděl jsem' : 'Oblíbené'}`; setModalActiveStatus(status); }
+  // refresh lists on page
+  if(document.getElementById('watchlist-grid')) await loadWatchlist();
+  if(document.getElementById('films-grid')) await loadFilms(true);
+}
+
+function setModalActiveStatus(status){
+  // toggle active class on modal buttons
+  const btns = document.querySelectorAll('#modal .wl-btn');
+  btns.forEach(b => {
+    const s = b.getAttribute('data-status');
+    if(status === null){ b.classList.remove('btn-active'); }
+    else if(s === status) b.classList.add('btn-active');
+    else b.classList.remove('btn-active');
+  });
 }
 
 function closeModal(e){ if (e.target.id === 'modal') document.getElementById('modal').style.display = 'none'; }
