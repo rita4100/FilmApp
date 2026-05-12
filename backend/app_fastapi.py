@@ -97,9 +97,24 @@ def random_film():
 
 
 @app.get("/films/top10")
-def top10():
+def top10(genre: str = None, year: int = None):
+    # Support optional filtering by genre and year
     conn = get_db()
-    films = conn.execute("SELECT id, title, year, description, rating, poster_url, trailer_key FROM films ORDER BY rating DESC LIMIT 10").fetchall()
+    query = "SELECT DISTINCT f.id, f.title, f.year, f.description, f.rating, f.poster_url, f.trailer_key FROM films f"
+    params = []
+    if genre:
+        query += " JOIN film_genres fg ON f.id = fg.film_id JOIN genres g ON fg.genre_id = g.id WHERE g.name = ?"
+        params.append(genre)
+    else:
+        query += " WHERE 1=1"
+
+    if year:
+        query += " AND f.year = ?"
+        params.append(year)
+
+    query += " ORDER BY f.rating DESC LIMIT 10"
+
+    films = conn.execute(query, params).fetchall()
     conn.close()
     return [dict(f) for f in films]
 

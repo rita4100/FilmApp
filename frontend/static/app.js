@@ -14,6 +14,13 @@ function updateUserBar() {
 }
 updateUserBar();
 
+// Small mapping for display-only genre fixes
+function normalizeGenre(name){
+  if(!name) return name;
+  if(name === 'Krimi') return 'Kriminal';
+  return name;
+}
+
 async function fetchJson(path, opts) { const res = await fetch(`${API}${path}`, opts); return res.json(); }
 
 function renderFilms(gridId, films, append = false) {
@@ -129,6 +136,18 @@ document.addEventListener('DOMContentLoaded', ()=>{
 
 async function loadTop10() { const data = await fetchJson('/films/top10'); renderFilms('top10-grid', data); }
 
+async function loadTop10Filtered(){
+  const genre = document.getElementById('top10-genre')?.value;
+  const year = document.getElementById('top10-year')?.value;
+  let url = '/films/top10';
+  const params = [];
+  if(genre) params.push(`genre=${encodeURIComponent(genre)}`);
+  if(year) params.push(`year=${encodeURIComponent(year)}`);
+  if(params.length) url += `?${params.join('&')}`;
+  const data = await fetchJson(url);
+  renderFilms('top10-grid', data);
+}
+
 async function loadWatchlist() { if (!currentUser) { alert('Musíš být přihlášen!'); return; } const data = await fetchJson(`/watchlist/${currentUser.id}`); renderFilms('watchlist-grid', data); }
 
 async function moodMatch() { const mood = document.getElementById('mood-input')?.value; if (!mood) return; const data = await fetchJson('/mood-match', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({mood}) }); renderFilms('mood-grid', data); }
@@ -143,7 +162,7 @@ async function openModal(id) {
     <div style="flex:1">
       <h2>${film.title}</h2>
       <p style="color:#aaa;margin:6px 0">${film.year || ''} &nbsp; ⭐ ${(film.rating||0).toFixed(1)}</p>
-      <div>${(film.genres||[]).map(g=>`<span class="badge">${g}</span>`).join('')}</div>
+  <div>${(film.genres||[]).map(g=>`<span class="badge">${normalizeGenre(g)}</span>`).join('')}</div>
       <p style="margin-top:12px;font-size:.9rem;color:#ccc">${film.description||''}</p>
       ${film.trailer_key ? `<iframe width="100%" height="400" src="https://www.youtube.com/embed/${film.trailer_key}" frameborder="0" allowfullscreen></iframe>` : ''}
       ${film.czdb ? `<div style="margin-top:10px;padding:8px;background:#071b2b;border-radius:6px">
@@ -171,7 +190,7 @@ async function banUser(userId, ban){ await fetch(`/admin/ban/${userId}`, {method
 async function adminAddFilm(){ const title = document.getElementById('a-title')?.value; const year = parseInt(document.getElementById('a-year')?.value); const desc = document.getElementById('a-desc')?.value; const ratingInput = document.getElementById('a-rating')?.value; const rating = ratingInput === '' ? 0 : Number(ratingInput); if (!Number.isInteger(rating) || rating < 0 || rating > 10) { alert('Hodnocení musí být celé číslo od 0 do 10.'); return; } await fetch('/admin/films', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title, year, description: desc, rating})}); alert('Film přidán!'); }
 
 document.addEventListener('DOMContentLoaded', ()=>{
-  fetchJson('/genres').then(gs=>{ const sel = document.getElementById('f-genre'); if(sel) gs.forEach(g=> sel.innerHTML += `<option value="${g.name}">${g.name}</option>`); });
+  fetchJson('/genres').then(gs=>{ const sel = document.getElementById('f-genre'); if(sel) gs.forEach(g=> sel.innerHTML += `<option value="${g.name}">${normalizeGenre(g.name)}</option>`); });
   // Populate year select from backend stats (years with counts)
   fetchJson('/stats').then(s=>{
     const ys = s.by_year || [];
@@ -184,6 +203,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
       });
     }
   }).catch(()=>{/* ignore */});
+  // Populate top10 filters too
+  fetchJson('/genres').then(gs=>{ const sel = document.getElementById('top10-genre'); if(sel) gs.forEach(g=> sel.innerHTML += `<option value="${g.name}">${normalizeGenre(g.name)}</option>`); });
+  fetchJson('/stats').then(s=>{ const ys = s.by_year || []; const tsel = document.getElementById('top10-year'); if(tsel && Array.isArray(ys)) ys.forEach(y=>{ if(y.year) tsel.innerHTML += `<option value="${y.year}">${y.year} (${y.count})</option>`; }); }).catch(()=>{/* ignore */});
   if(document.getElementById('top10-grid')) loadTop10();
   if(document.getElementById('films-grid')) loadFilms();
   if(document.getElementById('watchlist-grid')) loadWatchlist();

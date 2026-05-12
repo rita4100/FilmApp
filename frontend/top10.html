@@ -20,6 +20,11 @@
     <div class="container">
       <section>
         <h2>🏆 Top 10 filmů</h2>
+        <div class="filters" style="margin-bottom:12px">
+          <select id="top10-genre"><option value="">Všechny žánry</option></select>
+          <select id="top10-year"><option value="">Všechny roky</option></select>
+          <button class="btn" onclick="loadTop10Filtered()">Filtrovat</button>
+        </div>
         <div class="films-grid" id="top10-grid"></div>
       </section>
     </div>
