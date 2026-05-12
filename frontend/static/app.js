@@ -1,5 +1,5 @@
 // Minimal, clean frontend JS for FastAPI backend
-const API = '';
+const API = window.location.origin || '';
 
 let currentUser = JSON.parse(localStorage.getItem('user') || 'null');
 
@@ -21,7 +21,19 @@ function normalizeGenre(name){
   return name;
 }
 
-async function fetchJson(path, opts) { const res = await fetch(`${API}${path}`, opts); return res.json(); }
+async function fetchJson(path, opts) {
+  const res = await fetch(`${API}${path}`, opts);
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error(`API request failed: ${res.status} ${res.statusText}`);
+  }
+  if (!res.ok) {
+    throw new Error(data.detail || data.message || res.statusText || 'Chyba API');
+  }
+  return data;
+}
 
 function renderFilms(gridId, films, append = false) {
   const grid = document.getElementById(gridId); if (!grid) return;
@@ -110,16 +122,22 @@ async function loadFilms(forceReset = false) {
     lastQuery = { base: '/films', sort, year, genre };
   }
 
-  const data = await fetchJson(url);
-  if(currentPage === 1) renderFilms('films-grid', data);
-  else renderFilms('films-grid', data, true);
+  try {
+    const data = await fetchJson(url);
+    if(currentPage === 1) renderFilms('films-grid', data);
+    else renderFilms('films-grid', data, true);
 
-  // Show load-more if backend returned exactly the page size (20) and we used paginated endpoint
-  const loadMoreBtn = document.getElementById('load-more-btn');
-  if(lastQuery && Array.isArray(data) && data.length === 20){
-    loadMoreBtn.style.display = 'inline-block';
-  } else {
-    loadMoreBtn.style.display = 'none';
+    const loadMoreBtn = document.getElementById('load-more-btn');
+    if(lastQuery && Array.isArray(data) && data.length === 20){
+      loadMoreBtn.style.display = 'inline-block';
+    } else {
+      loadMoreBtn.style.display = 'none';
+    }
+  } catch (err) {
+    const grid = document.getElementById('films-grid');
+    if (grid) grid.innerHTML = `<p style='color:#f55'>Chyba: ${err.message}</p>`;
+    const loadMoreBtn = document.getElementById('load-more-btn');
+    if(loadMoreBtn) loadMoreBtn.style.display = 'none';
   }
 }
 

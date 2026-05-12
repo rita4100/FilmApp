@@ -6,6 +6,7 @@ import sqlite3
 import os
 from dotenv import load_dotenv
 from .db import init_db
+from .seed import seed as seed_db
 import requests
 
 load_dotenv()
@@ -35,6 +36,23 @@ def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
+
+
+def has_films():
+    conn = get_db()
+    count = conn.execute("SELECT COUNT(*) FROM films").fetchone()[0]
+    conn.close()
+    return count > 0
+
+
+@app.on_event("startup")
+async def seed_database_if_empty():
+    if not has_films():
+        print("ℹ️ Databáze je prázdná, naplňuji filmy...")
+        try:
+            seed_db()
+        except Exception as e:
+            print("⚠️ Nepodařilo se naplnit databázi:", e)
 
 
 def parse_rating(value, default=0):
