@@ -37,6 +37,14 @@ def get_db():
     return conn
 
 
+def parse_rating(value, default=0):
+    if value in (None, ""):
+        return default
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0 or value > 10:
+        raise HTTPException(status_code=400, detail="Hodnocení musí být celé číslo od 0 do 10")
+    return value
+
+
 # Serve frontend static files
 app.mount("/static", StaticFiles(directory=os.path.join(FRONTEND_DIR, "static")), name="static")
 
@@ -51,7 +59,7 @@ def index():
 
 # Films
 @app.get("/films")
-def get_films(genre: str = None, year: int = None, min_rating: float = 0, sort: str = "rating", page: int = 1):
+def get_films(genre: str = None, year: int = None, min_rating: int = 0, sort: str = "rating", page: int = 1):
     per_page = 20
     query = "SELECT DISTINCT f.id, f.title, f.year, f.description, f.rating, f.poster_url, f.trailer_key FROM films f"
     params = []
@@ -92,6 +100,16 @@ def random_film():
 def top10():
     conn = get_db()
     films = conn.execute("SELECT id, title, year, description, rating, poster_url, trailer_key FROM films ORDER BY rating DESC LIMIT 10").fetchall()
+    conn.close()
+    return [dict(f) for f in films]
+
+
+@app.get("/films/filter")
+def filter_films(hodnoceni: int):
+    if not (1 <= hodnoceni <= 10):
+        raise HTTPException(status_code=400, detail="Hodnocení musí být celé číslo od 1 do 10")
+    conn = get_db()
+    films = conn.execute("SELECT * FROM films WHERE rating >= ? ORDER BY rating DESC", (hodnoceni,)).fetchall()
     conn.close()
     return [dict(f) for f in films]
 
@@ -253,11 +271,12 @@ def ban_user(user_id: int, payload: dict):
 
 @app.post("/admin/films")
 def add_film(payload: dict):
+    rating = parse_rating(payload.get("rating", 0))
     conn = get_db()
     conn.execute("""INSERT INTO films (title, year, description, rating, poster_url)
                     VALUES (?, ?, ?, ?, ?)""",
                  (payload.get("title"), payload.get("year"), payload.get("description"),
-                  payload.get("rating", 0), payload.get("poster_url", "")))
+                  rating, payload.get("poster_url", "")))
     conn.commit()
     conn.close()
     return {"message": "Film přidán"}

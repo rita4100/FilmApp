@@ -118,7 +118,7 @@ async function loadAdmin(){ if(!currentUser || currentUser.role!=='admin'){ aler
 
 async function banUser(userId, ban){ await fetch(`/admin/ban/${userId}`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ban})}); loadAdmin(); }
 
-async function adminAddFilm(){ const title = document.getElementById('a-title')?.value; const year = parseInt(document.getElementById('a-year')?.value); const desc = document.getElementById('a-desc')?.value; const rating = parseFloat(document.getElementById('a-rating')?.value); await fetch('/admin/films', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title, year, description: desc, rating})}); alert('Film přidán!'); }
+async function adminAddFilm(){ const title = document.getElementById('a-title')?.value; const year = parseInt(document.getElementById('a-year')?.value); const desc = document.getElementById('a-desc')?.value; const ratingInput = document.getElementById('a-rating')?.value; const rating = ratingInput === '' ? 0 : Number(ratingInput); if (!Number.isInteger(rating) || rating < 0 || rating > 10) { alert('Hodnocení musí být celé číslo od 0 do 10.'); return; } await fetch('/admin/films', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title, year, description: desc, rating})}); alert('Film přidán!'); }
 
 document.addEventListener('DOMContentLoaded', ()=>{
   fetchJson('/genres').then(gs=>{ const sel = document.getElementById('f-genre'); if(sel) gs.forEach(g=> sel.innerHTML += `<option value="${g.name}">${g.name}</option>`); });

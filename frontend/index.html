@@ -28,7 +28,20 @@
         <h2>Filmy</h2>
         <div class="filters">
           <input id="f-year" placeholder="Rok (např. 2023)" type="number" />
-          <input id="f-rating" placeholder="Min. hodnocení (0–10)" type="number" step="0.1" />
+          <select id="f-rating">
+            <option value="">Min. hodnocení (0–10)</option>
+            <option value="0">0</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+          </select>
           <select id="f-genre"><option value="">Všechny žánry</option></select>
           <select id="f-sort">
             <option value="rating">Hodnocení ↓</option>
