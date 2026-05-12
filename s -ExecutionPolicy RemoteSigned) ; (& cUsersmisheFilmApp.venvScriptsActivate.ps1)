@@ -1,0 +1,116 @@
+[33mcommit f329d13b483ffc7a1499becde11a117fc8f11fe2[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mrita[m[33m)[m
+Merge: ca440dd e2f5068
+Author: rita mishe <mishenkorita41@gmail.com>
+Date:   Tue May 12 08:33:48 2026 +0200
+
+    Resolve merge conflicts
+
+[33mcommit ca440ddff63b992bc92edbf2b14c2607c11cd47a[m
+Author: rita mishe <mishenkorita41@gmail.com>
+Date:   Tue May 12 08:14:15 2026 +0200
+
+    trailer_main
+
+[33mcommit e491fcd6679cc070887aab9761e7b3f40cc86501[m
+Author: rita mishe <mishenkorita41@gmail.com>
+Date:   Mon May 11 19:53:24 2026 +0200
+
+    trailer-final
+
+[33mcommit 81fe8ab10014864766859e3e1efb622b23b88603[m
+Author: rita mishe <mishenkorita41@gmail.com>
+Date:   Mon May 11 19:47:48 2026 +0200
+
+    trailer
+
+[33mcommit d5647fafb2be2b5d07b6ea8769a13403ec4d5406[m
+Author: rita mishe <mishenkorita41@gmail.com>
+Date:   Mon May 11 19:36:02 2026 +0200
+
+    trailer-odkaz
+
+[33mcommit e2f50681526a498b46c7eb1b2ff6f474896ece19[m
+Author: ViHeellsk <vipvipheellsk@gmail.com>
+Date:   Mon May 11 14:40:43 2026 +0200
+
+    delete stupid files
+
+[33mcommit 89dfc70113f33544313590fd164d26c11e4e09ba[m
+Author: ViHeellsk <vipvipheellsk@gmail.com>
+Date:   Mon May 11 12:59:01 2026 +0200
+
+    gitignore
+
+[33mcommit 2f54c014194d7fb3ac7f6d774e2dea79f861758f[m
+Author: rita mishe <mishenkorita41@gmail.com>
+Date:   Mon May 11 12:36:09 2026 +0200
+
+    init_py
+
+[33mcommit 64f295488273ed1cc31798fad511f5824b5b4c21[m
+Merge: 045df1c 5e2012b
+Author: ViHeellsk <vipvipheellsk@gmail.com>
+Date:   Mon May 11 11:12:08 2026 +0200
+
+    Konecne sjednoceno do main
+
+[33mcommit 045df1c269ce23d74f26a4c3de90e21c9f1155fa[m
+Author: ViHeellsk <vipvipheellsk@gmail.com>
+Date:   Mon May 11 10:59:40 2026 +0200
+
+    hujna kakaato
+
+[33mcommit 5e2012b6fdbc19a5b1041b1bf90d71856fb44da5[m[33m ([m[1;31morigin/Vi[m[33m)[m
+Author: ViHeellsk <vipvipheellsk@gmail.com>
+Date:   Mon May 11 10:53:04 2026 +0200
+
+    dohua
+
+[33mcommit 331f1d5393dbc571066f46807d98bb023b8feefe[m
+Merge: 2982f33 5044f2d
+Author: ViHeellsk <vipvipheellsk@gmail.com>
+Date:   Mon May 11 10:16:28 2026 +0200
+
+    Vyresen konflikt a sloucen kod z vetve Vi do main
+
+[33mcommit 5044f2d16cb98e717d6d37615c0d86367b3307b1[m
+Author: ViHeellsk <vipvipheellsk@gmail.com>
+Date:   Mon May 11 10:11:51 2026 +0200
+
+    db
+
+[33mcommit 2982f33774732ea7d6668d952d35d1c51d567614[m
+Author: ViHeellsk <vipvipheellsk@gmail.com>
+Date:   Mon May 11 09:54:33 2026 +0200
+
+    DB opravy
+
+[33mcommit c1b45d47b8ae436e8d55c799675c15a4c6d590c8[m
+Author: ViHeellsk <vipvipheellsk@gmail.com>
+Date:   Mon May 11 08:24:29 2026 +0200
+
+    f
+
+[33mcommit 6ed81b7d15abbddfec751d9f4ba4c904a501ce1f[m
+Author: ViHeellsk <vipvipheellsk@gmail.com>
+Date:   Thu May 7 14:14:03 2026 +0200
+
+    FastAPI implementace
+
+[33mcommit 366f62d5f5dae78ae9f402e24a81bbf34eef90cf[m
+Author: ViHeellsk <vipvipheellsk@gmail.com>
+Date:   Thu May 7 12:15:45 2026 +0200
+
+    fix
+
+[33mcommit 052ede65af0b2c564cb804577e865cd618cf0fff[m
+Author: ViHeellsk <vipvipheellsk@gmail.com>
+Date:   Thu May 7 10:28:31 2026 +0200
+
+    app.py zacatek
+
+[33mcommit fa2e90daee3a78dd6592721b092fc1d02ca8aa65[m
+Author: rita mishe <mishenkorita41@gmail.com>
+Date:   Thu May 7 08:38:50 2026 +0200
+
+    first commit

@@ -105,11 +105,18 @@ def top10():
 
 
 @app.get("/films/filter")
-def filter_films(hodnoceni: int):
-    if not (1 <= hodnoceni <= 10):
-        raise HTTPException(status_code=400, detail="Hodnocení musí být celé číslo od 1 do 10")
+def filter_films(min_rating: int):
+    if not isinstance(min_rating, int) or isinstance(min_rating, bool):
+        raise HTTPException(status_code=400, detail="min_rating must be an integer from 1 to 10")
+    if min_rating < 1 or min_rating > 10:
+        raise HTTPException(status_code=400, detail="min_rating must be an integer from 1 to 10")
+
+    upper_rating = min_rating + 1
     conn = get_db()
-    films = conn.execute("SELECT * FROM films WHERE rating >= ? ORDER BY rating DESC", (hodnoceni,)).fetchall()
+    films = conn.execute(
+        "SELECT * FROM films WHERE rating >= ? AND rating < ? ORDER BY rating DESC",
+        (min_rating, upper_rating)
+    ).fetchall()
     conn.close()
     return [dict(f) for f in films]
 

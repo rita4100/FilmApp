@@ -18,7 +18,7 @@ async function fetchJson(path, opts) { const res = await fetch(`${API}${path}`, 
 
 function renderFilms(gridId, films) {
   const grid = document.getElementById(gridId); if (!grid) return;
-  if (!films || !films.length) { grid.innerHTML = "<p style='color:#888'>Žádné filmy nenalezeny.</p>"; return; }
+  if (!films || !films.length) { grid.innerHTML = "<p style='color:#888'>Nic nenalezeno.</p>"; return; }
   grid.innerHTML = films.map(f => `
     <div class="film-card" onclick="openModal(${f.id})">
       <img src="${f.poster_url || ''}" alt="${f.title}" onerror="this.src='https://via.placeholder.com/180x270?text=No+Image'" />
@@ -69,10 +69,20 @@ async function loadFilms() {
   const rating = document.getElementById('f-rating')?.value;
   const genre = document.getElementById('f-genre')?.value;
   const sort = document.getElementById('f-sort')?.value || 'rating';
-  let url = `/films?sort=${sort}`;
-  if (year) url += `&year=${year}`;
-  if (rating) url += `&min_rating=${rating}`;
-  if (genre) url += `&genre=${encodeURIComponent(genre)}`;
+  let url;
+
+  if (rating) {
+    if (rating === '0') {
+      renderFilms('films-grid', []);
+      return;
+    }
+    url = `/films/filter?min_rating=${rating}`;
+  } else {
+    url = `/films?sort=${sort}`;
+    if (year) url += `&year=${year}`;
+    if (genre) url += `&genre=${encodeURIComponent(genre)}`;
+  }
+
   const data = await fetchJson(url);
   renderFilms('films-grid', data);
 }
