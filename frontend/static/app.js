@@ -16,10 +16,10 @@ updateUserBar();
 
 async function fetchJson(path, opts) { const res = await fetch(`${API}${path}`, opts); return res.json(); }
 
-function renderFilms(gridId, films) {
+function renderFilms(gridId, films, append = false) {
   const grid = document.getElementById(gridId); if (!grid) return;
   if (!films || !films.length) { grid.innerHTML = "<p style='color:#888'>Nic nenalezeno.</p>"; return; }
-  grid.innerHTML = films.map(f => `
+  const html = films.map(f => `
     <div class="film-card" onclick="openModal(${f.id})">
       <img src="${f.poster_url || ''}" alt="${f.title}" onerror="this.src='https://via.placeholder.com/180x270?text=No+Image'" />
       <div class="info">
@@ -29,6 +29,16 @@ function renderFilms(gridId, films) {
       </div>
     </div>
   `).join('');
+  if(append) grid.innerHTML += html; else grid.innerHTML = html;
+}
+
+// Pagination state
+let currentPage = 1;
+let lastQuery = null; // { urlBase, params }
+
+async function resetAndLoadFilms(){
+  currentPage = 1;
+  await loadFilms(true);
 }
 
 function openFullscreenTrailer(key) {
@@ -64,28 +74,58 @@ function handleEsc(e) {
   }
 }
 
-async function loadFilms() {
+async function loadFilms(forceReset = false) {
   const year = document.getElementById('f-year')?.value;
   const rating = document.getElementById('f-rating')?.value;
   const genre = document.getElementById('f-genre')?.value;
   const sort = document.getElementById('f-sort')?.value || 'rating';
-  let url;
 
+  // If called with forceReset true, or filters changed, restart pagination
+  if(forceReset) currentPage = 1;
+
+  let url;
+  // rating uses special /films/filter endpoint (returns a bucketed set)
   if (rating) {
     if (rating === '0') {
       renderFilms('films-grid', []);
+      document.getElementById('load-more-btn').style.display = 'none';
       return;
     }
     url = `/films/filter?min_rating=${rating}`;
+    // filter endpoint isn't paginated in backend, so we disable load more
+    lastQuery = null;
   } else {
-    url = `/films?sort=${sort}`;
+    url = `/films?sort=${sort}&page=${currentPage}`;
     if (year) url += `&year=${year}`;
     if (genre) url += `&genre=${encodeURIComponent(genre)}`;
+    // remember last query to allow loading next page
+    lastQuery = { base: '/films', sort, year, genre };
   }
 
   const data = await fetchJson(url);
-  renderFilms('films-grid', data);
+  if(currentPage === 1) renderFilms('films-grid', data);
+  else renderFilms('films-grid', data, true);
+
+  // Show load-more if backend returned exactly the page size (20) and we used paginated endpoint
+  const loadMoreBtn = document.getElementById('load-more-btn');
+  if(lastQuery && Array.isArray(data) && data.length === 20){
+    loadMoreBtn.style.display = 'inline-block';
+  } else {
+    loadMoreBtn.style.display = 'none';
+  }
 }
+
+// Attach load more button
+document.addEventListener('DOMContentLoaded', ()=>{
+  const lmb = document.getElementById('load-more-btn');
+  if(lmb){
+    lmb.addEventListener('click', async ()=>{
+      if(!lastQuery) return;
+      currentPage += 1;
+      await loadFilms();
+    });
+  }
+});
 
 async function loadTop10() { const data = await fetchJson('/films/top10'); renderFilms('top10-grid', data); }
 
