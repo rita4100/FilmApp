@@ -132,6 +132,18 @@ async function adminAddFilm(){ const title = document.getElementById('a-title')?
 
 document.addEventListener('DOMContentLoaded', ()=>{
   fetchJson('/genres').then(gs=>{ const sel = document.getElementById('f-genre'); if(sel) gs.forEach(g=> sel.innerHTML += `<option value="${g.name}">${g.name}</option>`); });
+  // Populate year select from backend stats (years with counts)
+  fetchJson('/stats').then(s=>{
+    const ys = s.by_year || [];
+    const ysel = document.getElementById('f-year');
+    if(ysel && Array.isArray(ys)){
+      ys.forEach(y => {
+        if(y.year){
+          ysel.innerHTML += `<option value="${y.year}">${y.year} (${y.count})</option>`;
+        }
+      });
+    }
+  }).catch(()=>{/* ignore */});
   if(document.getElementById('top10-grid')) loadTop10();
   if(document.getElementById('films-grid')) loadFilms();
   if(document.getElementById('watchlist-grid')) loadWatchlist();
