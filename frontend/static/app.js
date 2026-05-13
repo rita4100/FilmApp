@@ -198,6 +198,8 @@ async function openModal(id) {
       </div>
     `).join('');
 
+  const statusLabel = filmStatus ? `Stav: ${filmStatus === 'want' ? 'Chci vidět' : filmStatus === 'seen' ? 'Viděl jsem' : filmStatus === 'fav' ? 'Oblíbené' : ''}` : 'Film není v seznamu.';
+
   body.innerHTML = `
     <img src="${film.poster_url||''}" alt="${film.title}" onerror="this.src='https://via.placeholder.com/200x300?text=No+Image'" />
     <div style="flex:1">
@@ -211,6 +213,17 @@ async function openModal(id) {
       </div>
       ${film.cast && film.cast.length ? `<div class="film-cast"><h4>Herecké obsazení</h4>${film.cast.slice(0,10).map(p => `<div class="cast-item"><strong>${escapeHtml(p.person_name)}</strong>${p.character ? ` jako ${escapeHtml(p.character)}` : ''}</div>`).join('')}</div>` : '<div class="film-cast"><h4>Herecké obsazení</h4><p style="color:#888">Žádné herce jsme nenašli.</p></div>'}
       ${film.crew && film.crew.length ? `<div class="film-crew"><h4>Klíčový tým</h4>${film.crew.slice(0,8).map(p => `<div class="crew-item"><strong>${escapeHtml(p.person_name)}</strong>${p.job ? ` • ${escapeHtml(p.job)}` : ''}${p.department ? ` (${escapeHtml(p.department)})` : ''}</div>`).join('')}</div>` : ''}
+      ${currentUser ? `
+        <div class="watchlist-panel" style="margin:16px 0;padding:12px;border:1px solid #1f3a5f;border-radius:8px;background:#081b2d;">
+          <div id="modal-status-msg" style="margin-bottom:12px;color:#fff;">${statusLabel}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;">
+            <button class="btn wl-btn" data-status="want" onclick="event.stopPropagation(); updateWatchlistStatus(${film.id}, 'want')">Chci vidět</button>
+            <button class="btn wl-btn" data-status="seen" onclick="event.stopPropagation(); updateWatchlistStatus(${film.id}, 'seen')">Viděl jsem</button>
+            <button class="btn wl-btn" data-status="fav" onclick="event.stopPropagation(); updateWatchlistStatus(${film.id}, 'fav')">Oblíbené</button>
+            <button class="btn btn-red wl-btn" data-status="none" onclick="event.stopPropagation(); updateWatchlistStatus(${film.id}, null)">Odebrat ze seznamu</button>
+          </div>
+        </div>
+      ` : `<div style="color:#aaa;margin-top:16px">Přihlas se pro stav filmu a správu seznamu.</div>`}
       <div class="rating-panel">
         ${film.community_rating ? `<div class="community-summary">Uživatelé: <strong>${film.community_rating.toFixed(1)}/10</strong> (${film.review_count} komentář${film.review_count === 1 ? '' : 'ů'})</div>` : `<div class="community-summary">Buď první, kdo ohodnotí tento film.</div>`}
         ${currentUser ? `
@@ -235,8 +248,8 @@ async function openModal(id) {
       </div>` : ''}
     </div>`;
   // set active state on buttons based on filmStatus
+  setModalActiveStatus(filmStatus);
   if(filmStatus){
-    setModalActiveStatus(filmStatus);
     const msg = document.getElementById('modal-status-msg'); if(msg) msg.textContent = `Stav: ${filmStatus === 'want' ? 'Chci vidět' : filmStatus === 'seen' ? 'Viděl jsem' : filmStatus === 'fav' ? 'Oblíbené' : ''}`;
   }
   initializeRatingStars(selectedStarScore);

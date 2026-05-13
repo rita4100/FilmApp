@@ -17,12 +17,27 @@
         <a href="/admin.html" id="admin-link" style="display:none">Admin</a>
       </nav>
     </header>
+    <div id="user-bar">
+      <span id="user-info">Nepřihlášen</span>
+      <button class="btn btn-red" onclick="logout()" id="logout-btn" style="display:none">Odhlásit</button>
+      <a class="btn btn-blue" href="/login.html" id="login-btn">Přihlásit</a>
+    </div>
     <div class="container">
       <section>
-  <h2>📋 Můj seznam</h2>
+        <h2>📋 Můj seznam</h2>
         <div class="films-grid" id="watchlist-grid"></div>
       </section>
     </div>
+
+    <div id="modal" onclick="closeModal(event)">
+      <div class="modal-content">
+        <button class="modal-close" onclick="document.getElementById('modal').style.display='none'">✕</button>
+        <div class="modal-body" id="modal-body"></div>
+      </div>
+    </div>
+
+    <div id="fullscreen-trailer" class="fullscreen-overlay"></div>
+
     <script src="/static/app.js"></script>
     <script>document.addEventListener('DOMContentLoaded', ()=>loadWatchlist());</script>
   </body>
