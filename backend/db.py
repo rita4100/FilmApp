@@ -18,6 +18,14 @@ def init_db():
     # Povolení podpory cizích klíčů v SQLite
     c.execute("PRAGMA foreign_keys = ON;")
 
+    # Pokud již tabulka ratings existuje ve starší verzi, doplňme chybějící sloupce
+    existing_ratings = [row[1] for row in c.execute("PRAGMA table_info(ratings)").fetchall()]
+    if existing_ratings:
+        if 'comment' not in existing_ratings:
+            c.execute("ALTER TABLE ratings ADD COLUMN comment TEXT")
+        if 'updated_at' not in existing_ratings:
+            c.execute("ALTER TABLE ratings ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP")
+
     # 1. TABULKA: Filmy (Katalog s externími daty)
     # Pozn.: přidáme i sloupec `rating` pro kompatibilitu se seed.py (tmdb vote_average -> rating)
     c.execute("""CREATE TABLE IF NOT EXISTS films (

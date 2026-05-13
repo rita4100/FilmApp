@@ -28,6 +28,21 @@ nav a:hover { color: #e94560; }
 .modal-body iframe { margin-top: 12px; border-radius: 8px; }
 .modal-close { float: right; background: none; border: none; color: #eee; font-size: 1.4rem; cursor: pointer; padding: 12px; }
 .badge { display: inline-block; background: #e94560; color: #fff; padding: 3px 10px; border-radius: 12px; font-size: .75rem; margin: 3px; }
+.rating-panel { margin-top: 18px; }
+.community-summary { font-size: .95rem; color: #d3d7e0; margin-bottom: 12px; }
+.rating-input { margin-top: 16px; padding: 16px; background: #0f1730; border-radius: 12px; border: 1px solid #22314f; }
+.rating-input .rating-label { font-size: .9rem; color: #c7d0e0; margin-bottom: 10px; }
+.rating-input .stars { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.rating-input .star { cursor: pointer; color: #445878; font-size: 1.25rem; transition: transform .1s ease, color .2s ease; }
+.rating-input .star:hover, .rating-input .star.active { color: #ffd700; transform: scale(1.1); }
+.rating-input textarea { width: 100%; resize: vertical; min-height: 90px; border: 1px solid #33455f; background: #0d1525; color: #eee; padding: 10px; border-radius: 10px; margin-bottom: 10px; }
+.rating-input .rating-msg { margin-top: 8px; font-size: .88rem; color: #8f8; }
+.review-list { margin-top: 18px; display: flex; flex-direction: column; gap: 14px; }
+.review-item { background: #0c1322; padding: 14px; border-radius: 12px; border: 1px solid #22314f; }
+.review-header { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: .85rem; color: #aab8ce; margin-bottom: 8px; }
+.review-score { color: #ffd700; font-weight: 700; }
+.review-user { color: #fff; }
+.review-date { color: #7c91b3; }
 .btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; margin: 4px; }
 .btn-red { background: #e94560; color: #fff; }
 .btn-blue { background: #0f3460; color: #fff; }

@@ -58,9 +58,22 @@ async def seed_database_if_empty():
 def parse_rating(value, default=0):
     if value in (None, ""):
         return default
-    if not isinstance(value, int) or isinstance(value, bool) or value < 0 or value > 10:
+    if isinstance(value, bool):
         raise HTTPException(status_code=400, detail="Hodnocení musí být celé číslo od 0 do 10")
-    return value
+    try:
+        score = int(value)
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="Hodnocení musí být celé číslo od 0 do 10")
+    if score < 0 or score > 10:
+        raise HTTPException(status_code=400, detail="Hodnocení musí být celé číslo od 0 do 10")
+    return score
+
+
+def parse_user_rating(value):
+    score = parse_rating(value, default=None)
+    if score is None or score < 1:
+        raise HTTPException(status_code=400, detail="Hodnocení musí být celé číslo od 1 do 10")
+    return score
 
 
 # Serve frontend static files
@@ -140,15 +153,14 @@ def top10(genre: str = None, year: int = None):
 @app.get("/films/filter")
 def filter_films(min_rating: int):
     if not isinstance(min_rating, int) or isinstance(min_rating, bool):
-        raise HTTPException(status_code=400, detail="min_rating must be an integer from 1 to 10")
-    if min_rating < 1 or min_rating > 10:
-        raise HTTPException(status_code=400, detail="min_rating must be an integer from 1 to 10")
+        raise HTTPException(status_code=400, detail="min_rating must be an integer from 0 to 10")
+    if min_rating < 0 or min_rating > 10:
+        raise HTTPException(status_code=400, detail="min_rating must be an integer from 0 to 10")
 
-    upper_rating = min_rating + 1
     conn = get_db()
     films = conn.execute(
-        "SELECT * FROM films WHERE rating >= ? AND rating < ? ORDER BY rating DESC",
-        (min_rating, upper_rating)
+        "SELECT * FROM films WHERE rating >= ? ORDER BY rating DESC",
+        (min_rating,)
     ).fetchall()
     conn.close()
     return [dict(f) for f in films]
@@ -169,9 +181,20 @@ def get_film(film_id: int):
     """, (film_id,)).fetchall()
 
     soundtracks = conn.execute("SELECT song_title, artist FROM soundtracks WHERE film_id = ?", (film_id,)).fetchall()
+    rating_stats = conn.execute("SELECT AVG(score) AS avg_score, COUNT(*) AS review_count FROM ratings WHERE film_id = ?", (film_id,)).fetchone()
+    recent_reviews = conn.execute("""SELECT r.score, r.comment, r.created_at, r.updated_at, r.user_id, u.username
+                                     FROM ratings r
+                                     JOIN users u ON u.id = r.user_id
+                                     WHERE r.film_id = ?
+                                     ORDER BY r.updated_at DESC
+                                     LIMIT 10""", (film_id,)).fetchall()
+
     result = dict(film)
     result["genres"] = [g[0] for g in genres]
     result["soundtracks"] = [dict(s) for s in soundtracks]
+    result["community_rating"] = round(rating_stats["avg_score"], 1) if rating_stats["avg_score"] is not None else None
+    result["review_count"] = rating_stats["review_count"]
+    result["reviews"] = [dict(r) for r in recent_reviews]
     # Try to enrich with CZDB lookup (no API key required). If not found or error, skip quietly.
     try:
         czdb_base = os.environ.get('CZDB_API', 'http://api.czdb.cz')
@@ -281,14 +304,38 @@ def get_watchlist(user_id: int):
 # Ratings
 @app.post("/ratings")
 def rate_film(payload: dict):
+    user_id = payload.get("user_id")
+    film_id = payload.get("film_id")
+    if not user_id or not film_id:
+        raise HTTPException(status_code=400, detail="Chybí user_id nebo film_id")
+    score = parse_user_rating(payload.get("score"))
+    comment = payload.get("comment") or ""
     conn = get_db()
-    conn.execute("""INSERT INTO ratings (user_id, film_id, score) VALUES (?, ?, ?)
-                    ON CONFLICT(user_id, film_id) DO UPDATE SET score=?""",
-                 (payload["user_id"], payload["film_id"], payload["score"], payload["score"]))
+    conn.execute("""INSERT INTO ratings (user_id, film_id, score, comment)
+                    VALUES (?, ?, ?, ?)
+                    ON CONFLICT(user_id, film_id) DO UPDATE SET
+                      score = excluded.score,
+                      comment = excluded.comment,
+                      updated_at = CURRENT_TIMESTAMP""",
+                 (user_id, film_id, score, comment))
     conn.commit()
     conn.close()
     return {"message": "Hodnocení uloženo"}
 
+@app.get("/ratings")
+def get_ratings(film_id: int, user_id: int = None):
+    conn = get_db()
+    query = """SELECT r.score, r.comment, r.created_at, r.updated_at, r.user_id, u.username
+               FROM ratings r
+               JOIN users u ON u.id = r.user_id
+               WHERE r.film_id = ?"""
+    params = [film_id]
+    if user_id:
+        query += " AND r.user_id = ?"
+        params.append(user_id)
+    reviews = conn.execute(query, params).fetchall()
+    conn.close()
+    return [dict(r) for r in reviews]
 
 # Admin
 @app.get("/admin/users")

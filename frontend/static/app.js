@@ -2,6 +2,12 @@
 const API = window.location.origin || '';
 
 let currentUser = JSON.parse(localStorage.getItem('user') || 'null');
+let selectedStarScore = 0;
+
+function escapeHtml(text) {
+  if (!text) return '';
+  return text.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
 
 function updateUserBar() {
   const el = document.getElementById('user-info'); if (!el) return;
@@ -103,24 +109,14 @@ async function loadFilms(forceReset = false) {
   // If called with forceReset true, or filters changed, restart pagination
   if(forceReset) currentPage = 1;
 
-  let url;
-  // rating uses special /films/filter endpoint (returns a bucketed set)
-  if (rating) {
-    if (rating === '0') {
-      renderFilms('films-grid', []);
-      document.getElementById('load-more-btn').style.display = 'none';
-      return;
-    }
-    url = `/films/filter?min_rating=${rating}`;
-    // filter endpoint isn't paginated in backend, so we disable load more
-    lastQuery = null;
-  } else {
-    url = `/films?sort=${sort}&page=${currentPage}`;
-    if (year) url += `&year=${year}`;
-    if (genre) url += `&genre=${encodeURIComponent(genre)}`;
-    // remember last query to allow loading next page
-    lastQuery = { base: '/films', sort, year, genre };
+  let url = `/films?sort=${sort}&page=${currentPage}`;
+  if (year) url += `&year=${year}`;
+  if (genre) url += `&genre=${encodeURIComponent(genre)}`;
+  if (rating !== undefined && rating !== null && rating !== '') {
+    url += `&min_rating=${rating}`;
   }
+  // remember last query to allow loading next page
+  lastQuery = { base: '/films', sort, year, genre, rating };
 
   try {
     const data = await fetchJson(url);
@@ -189,23 +185,40 @@ async function openModal(id) {
 
   const body = document.getElementById('modal-body'); if (!body) return;
   const onWatchlistPage = !!document.getElementById('watchlist-grid');
+  const userReview = currentUser ? (film.reviews || []).find(r => r.user_id === currentUser.id) : null;
+  selectedStarScore = userReview ? userReview.score : 0;
+  const reviewCards = (film.reviews || []).map(r => `
+      <div class="review-item">
+        <div class="review-header">
+          <span class="review-score">★ ${r.score}/10</span>
+          <span class="review-user">${escapeHtml(r.username)}</span>
+          <span class="review-date">${new Date(r.updated_at).toLocaleDateString('cs-CZ')}</span>
+        </div>
+        <p>${r.comment ? escapeHtml(r.comment) : '<span style="color:#777">Žádný komentář</span>'}</p>
+      </div>
+    `).join('');
+
   body.innerHTML = `
     <img src="${film.poster_url||''}" alt="${film.title}" onerror="this.src='https://via.placeholder.com/200x300?text=No+Image'" />
     <div style="flex:1">
-      <h2>${film.title}</h2>
+      <h2>${escapeHtml(film.title)}</h2>
       <p style="color:#aaa;margin:6px 0">${film.year || ''} &nbsp; ⭐ ${(film.rating||0).toFixed(1)}</p>
       <div>${(film.genres||[]).map(g=>`<span class="badge">${normalizeGenre(g)}</span>`).join('')}</div>
-      <p style="margin-top:12px;font-size:.9rem;color:#ccc">${film.description||''}</p>
-      <div style="margin-top:10px">
+      <p style="margin-top:12px;font-size:.9rem;color:#ccc">${escapeHtml(film.description||'')}</p>
+      <div class="rating-panel">
+        ${film.community_rating ? `<div class="community-summary">Uživatelé: <strong>${film.community_rating.toFixed(1)}/10</strong> (${film.review_count} komentář${film.review_count === 1 ? '' : 'ů'})</div>` : `<div class="community-summary">Buď první, kdo ohodnotí tento film.</div>`}
         ${currentUser ? `
-          <div style="margin-top:8px">
-            <button class="btn wl-btn" data-status="want" onclick="updateWatchlistStatus(${film.id}, 'want')">Chci vidět</button>
-            <button class="btn wl-btn" data-status="seen" onclick="updateWatchlistStatus(${film.id}, 'seen')">Viděl jsem</button>
-            <button class="btn btn-blue wl-btn" data-status="fav" onclick="updateWatchlistStatus(${film.id}, 'fav')">Oblíbené</button>
-            ${onWatchlistPage ? `<button class="btn btn-red wl-btn" data-status="remove" onclick="updateWatchlistStatus(${film.id}, null)">Odebrat</button>` : ''}
+          <div class="rating-input">
+            <div class="rating-label">Tvoje hodnocení:</div>
+            <div class="stars" id="rating-stars">
+              ${buildRatingStars(selectedStarScore)}
+            </div>
+            <textarea id="rating-comment" placeholder="Napiš komentář k hodnocení..." rows="4">${userReview ? escapeHtml(userReview.comment) : ''}</textarea>
+            <button class="btn btn-blue" onclick="submitRating(${film.id})">Uložit komentář</button>
+            <div id="rating-msg" class="rating-msg"></div>
           </div>
-        ` : `<div style="color:#aaa;margin-top:8px">Přihlas se pro správu seznamu</div>`}
-        <div id="modal-status-msg" style="color:#9bd; margin-top:8px"></div>
+        ` : `<div style="color:#aaa;margin-top:16px">Přihlas se pro hodnocení a komentáře.</div>`}
+        ${reviewCards ? `<div class="review-list">${reviewCards}</div>` : ''}
       </div>
       ${film.trailer_key ? `<iframe width="100%" height="400" src="https://www.youtube.com/embed/${film.trailer_key}" frameborder="0" allowfullscreen></iframe>` : ''}
       ${film.czdb ? `<div style="margin-top:10px;padding:8px;background:#071b2b;border-radius:6px">
@@ -220,7 +233,55 @@ async function openModal(id) {
     setModalActiveStatus(filmStatus);
     const msg = document.getElementById('modal-status-msg'); if(msg) msg.textContent = `Stav: ${filmStatus === 'want' ? 'Chci vidět' : filmStatus === 'seen' ? 'Viděl jsem' : filmStatus === 'fav' ? 'Oblíbené' : ''}`;
   }
+  initializeRatingStars(selectedStarScore);
+  document.querySelectorAll('#rating-stars .star').forEach(star => {
+    star.addEventListener('click', () => setRatingStars(star));
+  });
   document.getElementById('modal').style.display = 'block';
+}
+
+function buildRatingStars(current = 0) {
+  let html = '';
+  for (let i = 1; i <= 10; i++) {
+    html += `<span class="star${i <= current ? ' active' : ''}" data-value="${i}" onclick="setRatingStars(this)">★</span>`;
+  }
+  return html;
+}
+
+function initializeRatingStars(score = 0) {
+  selectedStarScore = score;
+  const stars = document.querySelectorAll('#rating-stars .star');
+  stars.forEach(s => {
+    s.classList.toggle('active', Number(s.dataset.value) <= score);
+  });
+}
+
+function setRatingStars(el) {
+  const score = Number(el.dataset.value);
+  if (!score) return;
+  initializeRatingStars(score);
+}
+
+async function submitRating(filmId) {
+  if (!currentUser) { alert('Musíš být přihlášen!'); return; }
+  if (!selectedStarScore || selectedStarScore < 1 || selectedStarScore > 10) {
+    alert('Vyber hodnocení 1 až 10 hvězdiček.');
+    return;
+  }
+  const comment = document.getElementById('rating-comment')?.value || '';
+  const resp = await fetch('/ratings', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({user_id: currentUser.id, film_id: filmId, score: selectedStarScore, comment})
+  });
+  const data = await resp.json();
+  const msg = document.getElementById('rating-msg');
+  if (!resp.ok) {
+    if (msg) msg.textContent = data.detail || 'Chyba při ukládání hodnocení';
+    return;
+  }
+  if (msg) { msg.textContent = data.message || 'Uloženo'; msg.style.color = '#8f8'; }
+  await openModal(filmId);
 }
 
 async function updateWatchlistStatus(filmId, status){
@@ -283,4 +344,3 @@ document.addEventListener('DOMContentLoaded', ()=>{
   if(document.getElementById('watchlist-grid')) loadWatchlist();
   if(document.getElementById('admin-users')) loadAdmin();
 });
-      if (name === "admin") loadAdmin();
