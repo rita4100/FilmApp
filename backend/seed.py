@@ -1,3 +1,5 @@
+# Seed skript pro naplnění SQLite databáze filmy z TMDB.
+# Spustí se při startu backendu, pokud je databáze prázdná.
 import requests
 import sqlite3
 import os
@@ -10,9 +12,9 @@ DB_PATH = os.path.join(BASE_DIR, "films.db")
 
 # ⚠️ VLOŽ SVŮJ TMDB KLÍČ SEM
 load_dotenv()
-# Configurable via env vars:
-# SEED_PAGES - number of TMDB pages to fetch (default 8 -> ~160 films)
-# SEED_SLEEP - seconds to sleep between page requests (default 0.3)
+# Konfigurace přes proměnné prostředí:
+# SEED_PAGES - počet stránek z TMDB ke stažení (výchozí 8 -> ~160 filmů)
+# SEED_SLEEP - pauza mezi stránkami (výchozí 0.3s)
 SEED_PAGES = int(os.environ.get("SEED_PAGES", "8"))
 SEED_SLEEP = float(os.environ.get("SEED_SLEEP", "0.3"))
 
@@ -68,6 +70,7 @@ def fetch_genres():
     resp = requests.get(url).json()
     return {g["id"]: g["name"] for g in resp.get("genres", [])}
 
+# Naplní databázi filmy a žánry z TMDB.
 def seed():
     init_db()  # nejdřív vytvoř tabulky
     conn = sqlite3.connect(DB_PATH)

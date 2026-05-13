@@ -1,3 +1,5 @@
+# FastAPI backend pro jednoduchou filmovou aplikaci.
+# Obsahuje API, databázi a obsluhu frontendových statických souborů.
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -11,6 +13,7 @@ import requests
 
 load_dotenv()
 
+# Používáme env proměnnou TMDB_API_KEY, jinak fallback na seed klíč.
 TMDB_API_KEY = os.environ.get("TMDB_API_KEY") or SEED_TMDB_API_KEY
 if not os.environ.get("TMDB_API_KEY"):
     print("TMDB_API_KEY nebyl nalezen v prostredi. Pouzivam zalohovaci klic ze seed.py.")
@@ -25,7 +28,7 @@ FRONTEND_DIR = os.path.join(PROJECT_DIR, "frontend")
 app = FastAPI()
 
 
-# Ensure DB exists on startup
+# Inicializace databáze při startu aplikace.
 init_db()
 
 app.add_middleware(
@@ -37,12 +40,14 @@ app.add_middleware(
 )
 
 
+# Připojení k SQLite databázi.
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
 
+# Kontrola, zda databáze již obsahuje filmy.
 def has_films():
     conn = get_db()
     count = conn.execute("SELECT COUNT(*) FROM films").fetchone()[0]
@@ -50,6 +55,7 @@ def has_films():
     return count > 0
 
 
+# Při startu aplikace naplní databázi, pokud je prázdná.
 @app.on_event("startup")
 async def seed_database_if_empty():
     if not has_films():
@@ -60,6 +66,7 @@ async def seed_database_if_empty():
             print("⚠️ Nepodařilo se naplnit databázi:", e)
 
 
+# Pomocné funkce pro validaci číselného hodnocení.
 def parse_rating(value, default=0):
     if value in (None, ""):
         return default
@@ -74,6 +81,7 @@ def parse_rating(value, default=0):
     return score
 
 
+# Validuje uživatelské hodnocení (1-10).
 def parse_user_rating(value):
     score = parse_rating(value, default=None)
     if score is None or score < 1:
@@ -81,6 +89,7 @@ def parse_user_rating(value):
     return score
 
 
+# Volání TMDB pro načtení cast & crew dat.
 def fetch_tmdb_credits(tmdb_id: int):
     if not TMDB_API_KEY or TMDB_API_KEY.startswith("VLOZ"):
         print("Nebyl k dispozici platny TMDB API klic. Nelze nacist herce a stab.")
@@ -124,6 +133,7 @@ def fetch_tmdb_movie_details(tmdb_id: int):
         return None
 
 
+# Volání MusicBrainz API pro soundtracky.
 def musicbrainz_get(path: str, params: dict):
     try:
         resp = requests.get(f"{MUSICBRAINZ_BASE}/{path}", params=params, headers={"User-Agent": MUSICBRAINZ_USER_AGENT}, timeout=10)
@@ -136,6 +146,7 @@ def musicbrainz_get(path: str, params: dict):
         return None
 
 
+# Hledá release podle IMDb nebo názvu filmu.
 def search_musicbrainz_release(imdb_id: str = None, title: str = None, year: int = None):
     query = None
     if imdb_id:
@@ -264,7 +275,7 @@ def get_credits(film_id: int, tmdb_id: int = None):
     return {"cast": [], "crew": []}
 
 
-# Serve frontend static files
+# Serve frontend statické soubory a hlavní HTML stránku.
 app.mount("/static", StaticFiles(directory=os.path.join(FRONTEND_DIR, "static")), name="static")
 
 
@@ -277,6 +288,7 @@ def index():
 
 
 # Films
+# Vrací seznam filmů s filtrováním, řazením a stránkováním.
 @app.get("/films")
 def get_films(genre: str = None, year: int = None, rating: int = None, min_rating: int = 0, sort: str = "rating", page: int = 1):
     per_page = 20
@@ -310,6 +322,7 @@ def get_films(genre: str = None, year: int = None, rating: int = None, min_ratin
     return [dict(f) for f in films]
 
 
+# Vrací náhodně vybraný film z databáze.
 @app.get("/films/random")
 def random_film():
     conn = get_db()
@@ -320,6 +333,7 @@ def random_film():
     return dict(film)
 
 
+# Vrací Top 10 filmů podle hodnocení, volitelně filtrováno žánrem a rokem.
 @app.get("/films/top10")
 def top10(genre: str = None, year: int = None):
     # Support optional filtering by genre and year
@@ -343,6 +357,7 @@ def top10(genre: str = None, year: int = None):
     return [dict(f) for f in films]
 
 
+# Jednoduchý filtr filmů podle minimálního hodnocení.
 @app.get("/films/filter")
 def filter_films(min_rating: int):
     if not isinstance(min_rating, int) or isinstance(min_rating, bool):
@@ -359,6 +374,7 @@ def filter_films(min_rating: int):
     return [dict(f) for f in films]
 
 
+# Vrací detailní informace o jednom filmu, včetně žánrů, soundtracků, castu a komunitních recenzí.
 @app.get("/films/{film_id}")
 def get_film(film_id: int):
     conn = get_db()
