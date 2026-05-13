@@ -15,6 +15,8 @@ TMDB_API_KEY = os.environ.get("TMDB_API_KEY") or SEED_TMDB_API_KEY
 if not os.environ.get("TMDB_API_KEY"):
     print("TMDB_API_KEY nebyl nalezen v prostredi. Pouzivam zalohovaci klic ze seed.py.")
 BASE_URL = "https://api.themoviedb.org/3"
+MUSICBRAINZ_BASE = "https://musicbrainz.org/ws/2"
+MUSICBRAINZ_USER_AGENT = os.environ.get("MUSICBRAINZ_USER_AGENT", "MovieMind/1.0.0 (info@moviemind.local)")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(BASE_DIR)
 DB_PATH = os.path.join(BASE_DIR, "films.db")
@@ -92,6 +94,129 @@ def fetch_tmdb_credits(tmdb_id: int):
     except Exception as exc:
         print(f"⚠️ Chyba při načítání TMDB credits: {exc}")
         return None
+
+
+def fetch_tmdb_external_ids(tmdb_id: int):
+    if not TMDB_API_KEY or TMDB_API_KEY.startswith("VLOZ"):
+        return None
+    try:
+        resp = requests.get(f"{BASE_URL}/movie/{tmdb_id}/external_ids", params={"api_key": TMDB_API_KEY}, timeout=10)
+        if resp.status_code != 200:
+            print(f"⚠️ TMDB external_ids request failed: {resp.status_code} {resp.text}")
+            return None
+        return resp.json()
+    except Exception as exc:
+        print(f"⚠️ Chyba při načítání TMDB external IDs: {exc}")
+        return None
+
+
+def fetch_tmdb_movie_details(tmdb_id: int):
+    if not TMDB_API_KEY or TMDB_API_KEY.startswith("VLOZ"):
+        return None
+    try:
+        resp = requests.get(f"{BASE_URL}/movie/{tmdb_id}", params={"api_key": TMDB_API_KEY, "language": "en-US"}, timeout=10)
+        if resp.status_code != 200:
+            print(f"⚠️ TMDB movie details request failed: {resp.status_code} {resp.text}")
+            return None
+        return resp.json()
+    except Exception as exc:
+        print(f"⚠️ Chyba při načítání TMDB movie details: {exc}")
+        return None
+
+
+def musicbrainz_get(path: str, params: dict):
+    try:
+        resp = requests.get(f"{MUSICBRAINZ_BASE}/{path}", params=params, headers={"User-Agent": MUSICBRAINZ_USER_AGENT}, timeout=10)
+        if resp.status_code != 200:
+            print(f"⚠️ MusicBrainz request failed: {resp.status_code} {resp.text}")
+            return None
+        return resp.json()
+    except Exception as exc:
+        print(f"⚠️ Chyba při načítání MusicBrainz: {exc}")
+        return None
+
+
+def search_musicbrainz_release(imdb_id: str = None, title: str = None, year: int = None):
+    query = None
+    if imdb_id:
+        query = f'imdbid:"{imdb_id}" AND secondarytype:Soundtrack'
+    elif title:
+        safe_title = title.replace('"', '')
+        query = f'"{safe_title}" AND secondarytype:Soundtrack'
+        if year:
+            query += f" AND date:{year}"
+    else:
+        return None
+
+    data = musicbrainz_get("release", {"query": query, "fmt": "json", "limit": 10})
+    if not data:
+        return None
+    releases = data.get("releases") or []
+    return releases[0] if releases else None
+
+
+def fetch_musicbrainz_release_tracks(release_id: str):
+    data = musicbrainz_get(f"release/{release_id}", {"inc": "recordings", "fmt": "json"})
+    if not data:
+        return None
+
+    artist_credit = data.get("artist-credit") or []
+    default_artist = ''.join([str(item.get("name", "")) for item in artist_credit if item])
+    tracks = []
+    for medium in data.get("media", []):
+        for track in medium.get("tracks", []):
+            artist_name = ''
+            track_artist_credit = track.get("artist-credit") or []
+            if track_artist_credit:
+                artist_name = ''.join([str(item.get("name", "")) for item in track_artist_credit if item])
+            if not artist_name:
+                artist_name = default_artist
+            tracks.append({
+                "song_title": f"{track.get('number', '')}. {track.get('title', '')}".strip(),
+                "artist": artist_name
+            })
+    return tracks
+
+
+def enrich_soundtracks_with_musicbrainz(film_id: int, title: str, tmdb_id: int = None):
+    imdb_id = None
+    tmdb_original_title = None
+    tmdb_year = None
+
+    if tmdb_id:
+        external = fetch_tmdb_external_ids(tmdb_id)
+        imdb_id = external.get("imdb_id") if external else None
+        details = fetch_tmdb_movie_details(tmdb_id)
+        if details:
+            tmdb_original_title = details.get("original_title")
+            tmdb_year = details.get("release_date", "")[:4] if details.get("release_date") else None
+
+    release = None
+    if imdb_id:
+        release = search_musicbrainz_release(imdb_id=imdb_id, year=tmdb_year)
+    if not release and tmdb_original_title and tmdb_original_title != title:
+        release = search_musicbrainz_release(title=tmdb_original_title, year=tmdb_year)
+    if not release:
+        release = search_musicbrainz_release(title=title, year=tmdb_year)
+    if not release and tmdb_original_title and tmdb_original_title != title:
+        release = search_musicbrainz_release(title=tmdb_original_title)
+    if not release:
+        release = search_musicbrainz_release(title=title)
+    if not release:
+        return []
+
+    tracks = fetch_musicbrainz_release_tracks(release.get("id"))
+    if not tracks:
+        return []
+
+    conn = get_db()
+    conn.execute("DELETE FROM soundtracks WHERE film_id = ?", (film_id,))
+    for track in tracks:
+        conn.execute("INSERT INTO soundtracks (film_id, song_title, artist) VALUES (?, ?, ?)",
+                     (film_id, track["song_title"], track["artist"]))
+    conn.commit()
+    conn.close()
+    return tracks
 
 
 def save_credits(film_id: int, credits: dict):
@@ -290,8 +415,19 @@ def get_film(film_id: int):
 def get_soundtrack(film_id: int):
     conn = get_db()
     tracks = conn.execute("SELECT * FROM soundtracks WHERE film_id = ?", (film_id,)).fetchall()
+    if tracks:
+        conn.close()
+        return [dict(t) for t in tracks]
+
+    film = conn.execute("SELECT title, tmdb_id FROM films WHERE id = ?", (film_id,)).fetchone()
     conn.close()
-    return [dict(t) for t in tracks]
+    if not film:
+        raise HTTPException(status_code=404, detail="Film nenalezen")
+
+    result = enrich_soundtracks_with_musicbrainz(film_id, film["title"], film["tmdb_id"])
+    if result:
+        return result
+    return [{"song_title": "Soundtrack nebyl nalezen.", "artist": ""}]
 
 
 # Genres
