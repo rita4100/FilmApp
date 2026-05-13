@@ -18,6 +18,19 @@ def init_db():
     # Povolení podpory cizích klíčů v SQLite
     c.execute("PRAGMA foreign_keys = ON;")
 
+    # 0. TABULKA: TMDb credits (cast + crew uložené v databázi)
+    c.execute("""CREATE TABLE IF NOT EXISTS credits (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        film_id INTEGER,
+        role_type TEXT CHECK(role_type IN ('cast','crew')) NOT NULL,
+        person_name TEXT NOT NULL,
+        character TEXT,
+        job TEXT,
+        department TEXT,
+        credit_order INTEGER DEFAULT 0,
+        FOREIGN KEY(film_id) REFERENCES films(id) ON DELETE CASCADE
+    )""")
+
     # Pokud již tabulka ratings existuje ve starší verzi, doplňme chybějící sloupce
     existing_ratings = [row[1] for row in c.execute("PRAGMA table_info(ratings)").fetchall()]
     if existing_ratings:
@@ -117,12 +130,12 @@ def init_db():
 
     conn.commit()
     conn.close()
-    print("✅ Databáze MovieMind inicializována.")
+    print("Databaze MovieMind inicializovana.")
 
 if __name__ == "__main__":
     # Pokud měníme strukturu tabulek, je nejlepší starou DB smazat (pro vývoj)
     if os.path.exists(DB_PATH):
         os.remove(DB_PATH)
-        print("🗑️ Stará databáze smazána.")
+        print("Stara databaze smazana.")
     
     init_db()

@@ -40,6 +40,10 @@ nav a:hover { color: #e94560; }
 .review-list { margin-top: 18px; display: flex; flex-direction: column; gap: 14px; }
 .review-item { background: #0c1322; padding: 14px; border-radius: 12px; border: 1px solid #22314f; }
 .review-header { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: .85rem; color: #aab8ce; margin-bottom: 8px; }
+.film-cast, .film-crew { margin-top: 18px; padding: 14px; background: #0f1624; border-radius: 12px; border: 1px solid #22314f; }
+.film-cast h4, .film-crew h4 { margin-bottom: 10px; color: #f5c518; }
+.cast-item, .crew-item { margin-bottom: 8px; font-size: .9rem; line-height: 1.4; color: #e2e8f0; }
+.cast-item strong, .crew-item strong { color: #ffffff; }
 .review-score { color: #ffd700; font-weight: 700; }
 .review-user { color: #fff; }
 .review-date { color: #7c91b3; }

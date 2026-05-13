@@ -205,6 +205,8 @@ async function openModal(id) {
       <p style="color:#aaa;margin:6px 0">${film.year || ''} &nbsp; ⭐ ${(film.rating||0).toFixed(1)}</p>
       <div>${(film.genres||[]).map(g=>`<span class="badge">${normalizeGenre(g)}</span>`).join('')}</div>
       <p style="margin-top:12px;font-size:.9rem;color:#ccc">${escapeHtml(film.description||'')}</p>
+      ${film.cast && film.cast.length ? `<div class="film-cast"><h4>Herecké obsazení</h4>${film.cast.slice(0,10).map(p => `<div class="cast-item"><strong>${escapeHtml(p.person_name)}</strong>${p.character ? ` jako ${escapeHtml(p.character)}` : ''}</div>`).join('')}</div>` : '<div class="film-cast"><h4>Herecké obsazení</h4><p style="color:#888">Žádné herce jsme nenašli.</p></div>'}
+      ${film.crew && film.crew.length ? `<div class="film-crew"><h4>Klíčový tým</h4>${film.crew.slice(0,8).map(p => `<div class="crew-item"><strong>${escapeHtml(p.person_name)}</strong>${p.job ? ` • ${escapeHtml(p.job)}` : ''}${p.department ? ` (${escapeHtml(p.department)})` : ''}</div>`).join('')}</div>` : ''}
       <div class="rating-panel">
         ${film.community_rating ? `<div class="community-summary">Uživatelé: <strong>${film.community_rating.toFixed(1)}/10</strong> (${film.review_count} komentář${film.review_count === 1 ? '' : 'ů'})</div>` : `<div class="community-summary">Buď první, kdo ohodnotí tento film.</div>`}
         ${currentUser ? `

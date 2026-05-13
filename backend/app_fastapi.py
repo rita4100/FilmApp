@@ -6,12 +6,15 @@ import sqlite3
 import os
 from dotenv import load_dotenv
 from .db import init_db
-from .seed import seed as seed_db
+from .seed import seed as seed_db, TMDB_API_KEY as SEED_TMDB_API_KEY
 import requests
 
 load_dotenv()
 
-TMDB_API_KEY = os.environ.get("TMDB_API_KEY", "VLOZ_SVUJ_KLIC_SEM")
+TMDB_API_KEY = os.environ.get("TMDB_API_KEY") or SEED_TMDB_API_KEY
+if not os.environ.get("TMDB_API_KEY"):
+    print("TMDB_API_KEY nebyl nalezen v prostredi. Pouzivam zalohovaci klic ze seed.py.")
+BASE_URL = "https://api.themoviedb.org/3"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(BASE_DIR)
 DB_PATH = os.path.join(BASE_DIR, "films.db")
@@ -74,6 +77,65 @@ def parse_user_rating(value):
     if score is None or score < 1:
         raise HTTPException(status_code=400, detail="Hodnocení musí být celé číslo od 1 do 10")
     return score
+
+
+def fetch_tmdb_credits(tmdb_id: int):
+    if not TMDB_API_KEY or TMDB_API_KEY.startswith("VLOZ"):
+        print("Nebyl k dispozici platny TMDB API klic. Nelze nacist herce a stab.")
+        return None
+    try:
+        resp = requests.get(f"{BASE_URL}/movie/{tmdb_id}/credits", params={"api_key": TMDB_API_KEY, "language": "cs-CZ"}, timeout=10)
+        if resp.status_code != 200:
+            print(f"⚠️ TMDB credits request failed: {resp.status_code} {resp.text}")
+            return None
+        return resp.json()
+    except Exception as exc:
+        print(f"⚠️ Chyba při načítání TMDB credits: {exc}")
+        return None
+
+
+def save_credits(film_id: int, credits: dict):
+    if not credits:
+        return
+    conn = get_db()
+    conn.execute("DELETE FROM credits WHERE film_id = ?", (film_id,))
+    for cast_member in credits.get("cast", []):
+        conn.execute("""INSERT INTO credits (film_id, role_type, person_name, character, job, department, credit_order)
+                        VALUES (?, 'cast', ?, ?, ?, ?, ?)""",
+                     (film_id, cast_member.get("name"), cast_member.get("character"), None,
+                      cast_member.get("known_for_department"), cast_member.get("order", 0)))
+    for crew_member in credits.get("crew", []):
+        conn.execute("""INSERT INTO credits (film_id, role_type, person_name, character, job, department, credit_order)
+                        VALUES (?, 'crew', ?, ?, ?, ?, ?)""",
+                     (film_id, crew_member.get("name"), None, crew_member.get("job"),
+                      crew_member.get("department"), crew_member.get("order", 0)))
+    conn.commit()
+    conn.close()
+
+
+def get_credits(film_id: int, tmdb_id: int = None):
+    conn = get_db()
+    rows = conn.execute("""SELECT role_type, person_name, character, job, department, credit_order
+                          FROM credits
+                          WHERE film_id = ?
+                          ORDER BY role_type, credit_order""", (film_id,)).fetchall()
+    conn.close()
+    if rows:
+        cast = []
+        crew = []
+        for row in rows:
+            if row[0] == 'cast':
+                cast.append({"person_name": row[1], "character": row[2], "order": row[5]})
+            else:
+                crew.append({"person_name": row[1], "job": row[3], "department": row[4], "order": row[5]})
+        return {"cast": cast, "crew": crew}
+
+    if tmdb_id:
+        credits = fetch_tmdb_credits(tmdb_id)
+        if credits:
+            save_credits(film_id, credits)
+            return get_credits(film_id)
+    return {"cast": [], "crew": []}
 
 
 # Serve frontend static files
@@ -192,6 +254,9 @@ def get_film(film_id: int):
     result = dict(film)
     result["genres"] = [g[0] for g in genres]
     result["soundtracks"] = [dict(s) for s in soundtracks]
+    credits = get_credits(film_id, result.get("tmdb_id"))
+    result["cast"] = credits["cast"][:12]
+    result["crew"] = credits["crew"][:10]
     result["community_rating"] = round(rating_stats["avg_score"], 1) if rating_stats["avg_score"] is not None else None
     result["review_count"] = rating_stats["review_count"]
     result["reviews"] = [dict(r) for r in recent_reviews]
@@ -415,7 +480,7 @@ def stats():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app_fastapi:app", host="0.0.0.0", port=5002, reload=True)
+    uvicorn.run("backend.app_fastapi:app", host="0.0.0.0", port=5002, reload=True)
 
 
 @app.get("/{file_path:path}")
