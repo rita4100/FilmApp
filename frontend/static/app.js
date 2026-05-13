@@ -113,7 +113,7 @@ async function loadFilms(forceReset = false) {
   if (year) url += `&year=${year}`;
   if (genre) url += `&genre=${encodeURIComponent(genre)}`;
   if (rating !== undefined && rating !== null && rating !== '') {
-    url += `&min_rating=${rating}`;
+    url += `&rating=${rating}`;
   }
   // remember last query to allow loading next page
   lastQuery = { base: '/films', sort, year, genre, rating };

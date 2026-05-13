@@ -31,8 +31,7 @@
             <option value="">Rok (vše)</option>
           </select>
           <select id="f-rating">
-            <option value="">Min. hodnocení (0–10)</option>
-            <option value="0">0</option>
+            <option value="">Hodnocení</option>
             <option value="1">1</option>
             <option value="2">2</option>
             <option value="3">3</option>
@@ -50,7 +49,7 @@
             <option value="year">Rok ↓</option>
             <option value="title">Název A–Z</option>
           </select>
-          <button onclick="loadFilms()">Filtrovat</button>
+          <button onclick="resetAndLoadFilms()">Filtrovat</button>
           <button onclick="randomFilm()" class="btn btn-blue">🎲 Náhodný film</button>
         </div>
         <div class="films-grid" id="films-grid"></div>

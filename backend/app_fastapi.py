@@ -171,8 +171,9 @@ def fetch_musicbrainz_release_tracks(release_id: str):
                 artist_name = ''.join([str(item.get("name", "")) for item in track_artist_credit if item])
             if not artist_name:
                 artist_name = default_artist
+            title = track.get('title', '') or ''
             tracks.append({
-                "song_title": f"{track.get('number', '')}. {track.get('title', '')}".strip(),
+                "song_title": title.strip(),
                 "artist": artist_name
             })
     return tracks
@@ -277,7 +278,7 @@ def index():
 
 # Films
 @app.get("/films")
-def get_films(genre: str = None, year: int = None, min_rating: int = 0, sort: str = "rating", page: int = 1):
+def get_films(genre: str = None, year: int = None, rating: int = None, min_rating: int = 0, sort: str = "rating", page: int = 1):
     per_page = 20
     query = "SELECT DISTINCT f.id, f.title, f.year, f.description, f.rating, f.poster_url, f.trailer_key FROM films f"
     params = []
@@ -291,8 +292,13 @@ def get_films(genre: str = None, year: int = None, min_rating: int = 0, sort: st
         query += " AND f.year = ?"
         params.append(year)
 
-    query += " AND f.rating >= ?"
-    params.append(min_rating)
+    if rating is not None:
+        query += " AND f.rating >= ? AND f.rating < ?"
+        params.append(rating)
+        params.append(rating + 1)
+    else:
+        query += " AND f.rating >= ?"
+        params.append(min_rating)
 
     allowed_sorts = {"rating": "f.rating DESC", "year": "f.year DESC", "title": "f.title ASC"}
     query += f" ORDER BY {allowed_sorts.get(sort, 'f.rating DESC')}"
