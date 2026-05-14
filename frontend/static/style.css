@@ -476,6 +476,52 @@ nav a:hover { color: var(--accent); }
   border: 1px solid var(--border-soft);
 }
 
+.info-accordion summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  list-style: none;
+  cursor: pointer;
+  color: var(--gold);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.info-accordion summary::-webkit-details-marker {
+  display: none;
+}
+
+.info-accordion summary::after {
+  content: "+";
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  color: var(--text);
+  background: var(--surface);
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.info-accordion[open] summary::after {
+  content: "−";
+  background: var(--accent);
+  color: #fff;
+}
+
+.info-accordion summary:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
+.info-accordion .accordion-content {
+  margin-top: 12px;
+}
+
 .soundtrack-section h4,
 .film-cast h4,
 .film-crew h4 {
