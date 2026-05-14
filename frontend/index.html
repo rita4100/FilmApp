@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>FilmApp - Domů</title>
-    <link rel="stylesheet" href="/static/style.css?v=fullscreen-modal">
+    <link rel="stylesheet" href="/static/style.css?v=search-films">
   </head>
   <body>
     <header>
@@ -27,6 +27,7 @@
       <section>
         <h2>Filmy</h2>
         <div class="filters">
+          <input type="search" id="f-search" class="search-field" placeholder="Vyhledat film (název nebo popis)…" autocomplete="off" />
           <select id="f-year">
             <option value="">Rok (vše)</option>
           </select>
@@ -68,6 +69,6 @@
 
     <div id="fullscreen-trailer" class="fullscreen-overlay"></div>
 
-    <script src="/static/app.js?v=fullscreen-modal"></script>
+    <script src="/static/app.js?v=search-films"></script>
   </body>
 </html>

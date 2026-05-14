@@ -105,6 +105,7 @@ async function loadFilms(forceReset = false) {
   const rating = document.getElementById('f-rating')?.value;
   const genre = document.getElementById('f-genre')?.value;
   const sort = document.getElementById('f-sort')?.value || 'rating';
+  const searchRaw = document.getElementById('f-search')?.value?.trim() || '';
 
   // If called with forceReset true, or filters changed, restart pagination
   if(forceReset) currentPage = 1;
@@ -115,8 +116,9 @@ async function loadFilms(forceReset = false) {
   if (rating !== undefined && rating !== null && rating !== '') {
     url += `&rating=${rating}`;
   }
+  if (searchRaw) url += `&q=${encodeURIComponent(searchRaw)}`;
   // remember last query to allow loading next page
-  lastQuery = { base: '/films', sort, year, genre, rating };
+  lastQuery = { base: '/films', sort, year, genre, rating, q: searchRaw };
 
   try {
     const data = await fetchJson(url);
@@ -145,6 +147,15 @@ document.addEventListener('DOMContentLoaded', ()=>{
       if(!lastQuery) return;
       currentPage += 1;
       await loadFilms();
+    });
+  }
+  const searchInp = document.getElementById('f-search');
+  if (searchInp) {
+    searchInp.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        resetAndLoadFilms();
+      }
     });
   }
 });

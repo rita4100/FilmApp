@@ -66,6 +66,21 @@ async def seed_database_if_empty():
             print("⚠️ Nepodařilo se naplnit databázi:", e)
 
 
+# Omezení délky textu pro vyhledávání (ochrana před příliš dlouhými dotazy).
+SEARCH_MAX_LEN = 200
+
+
+def normalize_search_q(q: str | None) -> str | None:
+    if q is None:
+        return None
+    s = q.strip()
+    if not s:
+        return None
+    if len(s) > SEARCH_MAX_LEN:
+        s = s[:SEARCH_MAX_LEN]
+    return s.lower()
+
+
 # Pomocné funkce pro validaci číselného hodnocení.
 def parse_rating(value, default=0):
     if value in (None, ""):
@@ -290,7 +305,7 @@ def index():
 # Films
 # Vrací seznam filmů s filtrováním, řazením a stránkováním.
 @app.get("/films")
-def get_films(genre: str = None, year: int = None, rating: int = None, min_rating: int = 0, sort: str = "rating", page: int = 1):
+def get_films(genre: str = None, year: int = None, rating: int = None, min_rating: int = 0, sort: str = "rating", page: int = 1, q: str = None):
     per_page = 20
     query = "SELECT DISTINCT f.id, f.title, f.year, f.description, f.rating, f.poster_url, f.trailer_key FROM films f"
     params = []
@@ -311,6 +326,12 @@ def get_films(genre: str = None, year: int = None, rating: int = None, min_ratin
     else:
         query += " AND f.rating >= ?"
         params.append(min_rating)
+
+    needle = normalize_search_q(q)
+    if needle:
+        query += " AND (instr(lower(f.title), ?) > 0 OR instr(lower(coalesce(f.description, '')), ?) > 0)"
+        params.append(needle)
+        params.append(needle)
 
     allowed_sorts = {"rating": "f.rating DESC", "year": "f.year DESC", "title": "f.title ASC"}
     query += f" ORDER BY {allowed_sorts.get(sort, 'f.rating DESC')}"
