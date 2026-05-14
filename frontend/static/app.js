@@ -1,22 +1,22 @@
-// Minimal, clean frontend JS for FastAPI backend
-const API = window.location.origin || '';
+// Minimální, čistý frontend JS pro FastAPI backend
+const API = window.location.origin || '';  // API základní URL
 
-let currentUser = JSON.parse(localStorage.getItem('user') || 'null');
-let selectedStarScore = 0;
+let currentUser = JSON.parse(localStorage.getItem('user') || 'null');  // Přihlášený uživatel
+let selectedStarScore = 0;  // Vybrané hodnocení v modalu
 
-const THEME_KEY = 'filmapp-theme';
+const THEME_KEY = 'filmapp-theme';  // Klíč pro ukládání motivu v localStorage
 
 function getStoredTheme() {
   try {
-    const t = localStorage.getItem(THEME_KEY);
-    return t === 'light' || t === 'dark' ? t : 'dark';
+    const t = localStorage.getItem(THEME_KEY);  // Načíst motiv z pamětí
+    return t === 'light' || t === 'dark' ? t : 'dark';  // Výchozí tmavý motiv
   } catch {
     return 'dark';
   }
 }
 
 function applyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
+  document.documentElement.setAttribute('data-theme', theme);  // Aplikovat motiv do CSS
   const btn = document.getElementById('theme-toggle');
   if (btn) {
     btn.setAttribute('aria-checked', theme === 'light' ? 'true' : 'false');
@@ -27,11 +27,11 @@ function applyTheme(theme) {
 function initThemeToggle() {
   const btn = document.getElementById('theme-toggle');
   if (!btn) return;
-  applyTheme(getStoredTheme());
+  applyTheme(getStoredTheme());  // Aplikovat uložený motiv
   btn.addEventListener('click', () => {
-    const next = getStoredTheme() === 'dark' ? 'light' : 'dark';
+    const next = getStoredTheme() === 'dark' ? 'light' : 'dark';  // Přepnout motiv
     try {
-      localStorage.setItem(THEME_KEY, next);
+      localStorage.setItem(THEME_KEY, next);  // Uložit nový motiv
     } catch {
       /* ignore */
     }
@@ -40,45 +40,45 @@ function initThemeToggle() {
 }
 
 function escapeHtml(text) {
-  if (!text) return '';
-  return text.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+  if (!text) return '';  // Ochrana před null
+  return text.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);  // Bezpečné zakódování
 }
 
 function updateUserBar() {
   const el = document.getElementById('user-info'); if (!el) return;
   if (currentUser) {
-    el.textContent = `👤 ${currentUser.username} (${currentUser.role})`;
+    el.textContent = `👤 ${currentUser.username} (${currentUser.role})`;  // Zobrazit přihlášeného
     const logoutBtn = document.getElementById('logout-btn'); if (logoutBtn) logoutBtn.style.display = 'inline';
     const loginBtn = document.getElementById('login-btn'); if (loginBtn) loginBtn.style.display = 'none';
-    const adminLink = document.getElementById('admin-link'); if (adminLink && currentUser.role === 'admin') adminLink.style.display = 'inline';
+    const adminLink = document.getElementById('admin-link'); if (adminLink && currentUser.role === 'admin') adminLink.style.display = 'inline';  // Admin odkaz
   }
 }
 updateUserBar();
 
-// Small mapping for display-only genre fixes
+// Malá mapovací funkce pro opravy zobrazení žánrů
 function normalizeGenre(name){
   if(!name) return name;
-  if(name === 'Krimi') return 'Kriminal';
+  if(name === 'Krimi') return 'Kriminal';  // Lokalizace názvu
   return name;
 }
 
 async function fetchJson(path, opts) {
-  const res = await fetch(`${API}${path}`, opts);
+  const res = await fetch(`${API}${path}`, opts);  // API volání
   let data;
   try {
-    data = await res.json();
+    data = await res.json();  // Parsovat JSON
   } catch {
     throw new Error(`API request failed: ${res.status} ${res.statusText}`);
   }
-  if (!res.ok) {
+  if (!res.ok) {  // Kontrola chyby
     throw new Error(data.detail || data.message || res.statusText || 'Chyba API');
   }
-  return data;
+  return data;  // Vráti data
 }
 
 function renderFilms(gridId, films, append = false) {
-  const grid = document.getElementById(gridId); if (!grid) return;
-  if (!films || !films.length) { grid.innerHTML = "<p class='ui-soft'>Nic nenalezeno.</p>"; return; }
+  const grid = document.getElementById(gridId); if (!grid) return;  // Najít grid element
+  if (!films || !films.length) { grid.innerHTML = "<p class='ui-soft'>Nic nenalezeno.</p>"; return; }  // Prázdný seznam
   const html = films.map(f => `
     <div class="film-card" onclick="openModal(${f.id})">
       <img src="${f.poster_url || ''}" alt="${f.title}" onerror="this.src='https://via.placeholder.com/180x270?text=No+Image'" />
@@ -90,16 +90,16 @@ function renderFilms(gridId, films, append = false) {
       </div>
     </div>
   `).join('');
-  if(append) grid.innerHTML += html; else grid.innerHTML = html;
+  if(append) grid.innerHTML += html; else grid.innerHTML = html;  // Přidat nebo nahradit
 }
 
-// Pagination state
+// Stav stránkování - pamatujeme si poslední dotaz
 let currentPage = 1;
 let lastQuery = null; // { urlBase, params }
 
 async function resetAndLoadFilms(){
-  currentPage = 1;
-  await loadFilms(true);
+  currentPage = 1;  // Reset na první stránku
+  await loadFilms(true);  // Znovu načíst filmy
 }
 
 function openFullscreenTrailer(key) {
