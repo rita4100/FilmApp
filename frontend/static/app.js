@@ -201,8 +201,8 @@ async function openModal(id) {
   const statusLabel = filmStatus ? `Stav: ${filmStatus === 'want' ? 'Chci vidět' : filmStatus === 'seen' ? 'Viděl jsem' : filmStatus === 'fav' ? 'Oblíbené' : ''}` : 'Film není v seznamu.';
 
   body.innerHTML = `
-    <img src="${film.poster_url||''}" alt="${film.title}" onerror="this.src='https://via.placeholder.com/200x300?text=No+Image'" />
-    <div style="flex:1">
+    <img class="film-modal-poster" src="${film.poster_url||''}" alt="${film.title}" onerror="this.src='https://via.placeholder.com/200x300?text=No+Image'" />
+    <div class="film-modal-info">
       <h2>${escapeHtml(film.title)}</h2>
       <p style="color:#aaa;margin:6px 0">${film.year || ''} &nbsp; ⭐ ${(film.rating||0).toFixed(1)}</p>
       <div>${(film.genres||[]).map(g=>`<span class="badge">${normalizeGenre(g)}</span>`).join('')}</div>
