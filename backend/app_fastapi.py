@@ -407,28 +407,6 @@ def get_film(film_id: int):
     result["community_rating"] = round(rating_stats["avg_score"], 1) if rating_stats["avg_score"] is not None else None
     result["review_count"] = rating_stats["review_count"]
     result["reviews"] = [dict(r) for r in recent_reviews]
-    # Try to enrich with CZDB lookup (no API key required). If not found or error, skip quietly.
-    try:
-        czdb_base = os.environ.get('CZDB_API', 'http://api.czdb.cz')
-        # search by title and year for better match
-        q = result.get('title', '')
-        y = result.get('year')
-        params = {'q': q}
-        if y:
-            params['y'] = y
-        r = requests.get(fz := f"{czdb_base}/search", params=params, timeout=5)
-        if r.status_code == 200:
-            data = r.json()
-            # CZDB returns false when not found
-            if data and data is not False:
-                # If it's a list of results, attach first match; if full detail, attach it
-                if isinstance(data, list):
-                    result['czdb'] = data[0] if data else None
-                else:
-                    result['czdb'] = data
-    except Exception:
-        # ignore CZDB errors, don't break API
-        result['czdb'] = None
     conn.close()
     return result
 

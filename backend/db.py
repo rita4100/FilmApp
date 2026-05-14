@@ -9,7 +9,7 @@ def init_db():
     """
     Inicializuje SQLite databázi se strukturou odpovídající požadavkům na:
     - Oddělení uživatelských dat a historie banů
-    - Dvojitý externí rating (TMDb a CZDB)
+    - Externí rating z TMDb
     - Časové stopy (timestamps) u všech akcí
     """
     conn = sqlite3.connect(DB_PATH)
@@ -49,7 +49,6 @@ def init_db():
         description TEXT,
         rating REAL DEFAULT 0,          -- Hlavní rating (kompatibilní se seed.py)
         rating_tmdb REAL,               -- Volitelné: specifické TMDb skóre
-        rating_czdb REAL,               -- Volitelné: skóre z CZDB
         poster_url TEXT,
         trailer_key TEXT                -- ID pro YouTube trailer
     )""")

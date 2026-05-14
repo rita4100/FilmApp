@@ -240,12 +240,6 @@ async function openModal(id) {
         ${reviewCards ? `<div class="review-list">${reviewCards}</div>` : ''}
       </div>
       ${film.trailer_key ? `<iframe width="100%" height="400" src="https://www.youtube.com/embed/${film.trailer_key}" frameborder="0" allowfullscreen></iframe>` : ''}
-      ${film.czdb ? `<div style="margin-top:10px;padding:8px;background:#071b2b;border-radius:6px">
-        <strong>CZDB:</strong>
-        <div style="font-size:.95rem;margin-top:6px">${film.czdb.title || film.czdb.name || ''} ${film.czdb.year?`(${film.czdb.year})`:''}</div>
-        ${film.czdb.rating?`<div>Hodnocení (CZDB): ${film.czdb.rating}</div>`:''}
-        ${film.czdb.url?`<div><a href="${film.czdb.url}" target="_blank">Detail na CZDB</a></div>`:''}
-      </div>` : ''}
     </div>`;
   // set active state on buttons based on filmStatus
   setModalActiveStatus(filmStatus);
