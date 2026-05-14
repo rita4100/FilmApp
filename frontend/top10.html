@@ -3,8 +3,9 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <title>FilmApp - Top 10</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css?v=nav-no-mood">
   </head>
   <body>
     <header>
@@ -12,7 +13,7 @@
       <nav>
         <a href="/">Domů</a>
         <a href="/top10.html">Top 10</a>
-  <a href="/watchlist.html">Seznam</a>
+        <a href="/watchlist.html">Seznam</a>
         <a href="/admin.html" id="admin-link" style="display:none">Admin</a>
       </nav>
     </header>
@@ -27,7 +28,7 @@
         <div class="films-grid" id="top10-grid"></div>
       </section>
     </div>
-    <script src="/static/app.js"></script>
+    <script src="/static/app.js?v=nav-no-mood"></script>
     <script>document.addEventListener('DOMContentLoaded', ()=>loadTop10());</script>
   </body>
 </html>
