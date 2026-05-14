@@ -600,26 +600,6 @@ def delete_film(film_id: int):
     return {"message": "Film smazán"}
 
 
-# Mood match
-@app.post("/mood-match")
-def mood_match(payload: dict):
-    mood = (payload.get("mood") or "").lower()
-    words = mood.split()
-    conn = get_db()
-    films = conn.execute("SELECT * FROM films").fetchall()
-    results = []
-    for film in films:
-        desc = (film["description"] or "").lower()
-        title = (film["title"] or "").lower()
-        score = sum(1 for w in words if w in desc or w in title)
-        if score > 0:
-            results.append((score, dict(film)))
-    results.sort(key=lambda x: x[0], reverse=True)
-    top5 = [r[1] for r in results[:5]]
-    conn.close()
-    return top5
-
-
 # Stats
 @app.get("/stats")
 def stats():

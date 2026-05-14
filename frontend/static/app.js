@@ -176,8 +176,6 @@ async function loadTop10Filtered(){
 
 async function loadWatchlist() { if (!currentUser) { alert('Musíš být přihlášen!'); return; } const data = await fetchJson(`/watchlist/${currentUser.id}`); renderFilms('watchlist-grid', data); }
 
-async function moodMatch() { const mood = document.getElementById('mood-input')?.value; if (!mood) return; const data = await fetchJson('/mood-match', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({mood}) }); renderFilms('mood-grid', data); }
-
 async function randomFilm() { const film = await fetchJson('/films/random'); openModal(film.id); }
 
 async function openModal(id) {
