@@ -5,17 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <title>FilmApp - Top 10</title>
-    <link rel="stylesheet" href="/static/style.css?v=nav-no-mood">
+    <script src="/static/theme-init.js"></script>
+    <link rel="stylesheet" href="/static/style.css?v=theme-1">
   </head>
   <body>
     <header>
-      <h1>🎬 FilmApp</h1>
-      <nav>
-        <a href="/">Domů</a>
-        <a href="/top10.html">Top 10</a>
-        <a href="/watchlist.html">Seznam</a>
-        <a href="/admin.html" id="admin-link" style="display:none">Admin</a>
-      </nav>
+      <div class="header-brand">
+        <h1>🎬 FilmApp</h1>
+        <nav>
+          <a href="/">Domů</a>
+          <a href="/top10.html">Top 10</a>
+          <a href="/watchlist.html">Seznam</a>
+          <a href="/admin.html" id="admin-link" style="display:none">Admin</a>
+        </nav>
+      </div>
+      <div class="theme-toggle-host">
+        <span class="theme-label" id="theme-label-dark">🌙</span>
+        <button type="button" id="theme-toggle" class="theme-toggle" role="switch" aria-checked="false" aria-label="Přepnout světlý nebo tmavý vzhled">
+          <span class="theme-toggle__track"><span class="theme-toggle__thumb"></span></span>
+        </button>
+        <span class="theme-label" id="theme-label-light">☀️</span>
+      </div>
     </header>
     <div class="container">
       <section>
@@ -28,7 +38,7 @@
         <div class="films-grid" id="top10-grid"></div>
       </section>
     </div>
-    <script src="/static/app.js?v=nav-no-mood"></script>
+    <script src="/static/app.js?v=theme-1"></script>
     <script>document.addEventListener('DOMContentLoaded', ()=>loadTop10());</script>
   </body>
 </html>

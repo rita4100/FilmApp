@@ -4,17 +4,27 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>FilmApp - Admin</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/theme-init.js"></script>
+    <link rel="stylesheet" href="/static/style.css?v=theme-1">
   </head>
   <body>
     <header>
-      <h1>🎬 FilmApp</h1>
-      <nav>
-        <a href="/">Domů</a>
-        <a href="/top10.html">Top 10</a>
-  <a href="/watchlist.html">Seznam</a>
-        <a href="/admin.html" id="admin-link" style="display:none">Admin</a>
-      </nav>
+      <div class="header-brand">
+        <h1>🎬 FilmApp</h1>
+        <nav>
+          <a href="/">Domů</a>
+          <a href="/top10.html">Top 10</a>
+          <a href="/watchlist.html">Seznam</a>
+          <a href="/admin.html" id="admin-link" style="display:none">Admin</a>
+        </nav>
+      </div>
+      <div class="theme-toggle-host">
+        <span class="theme-label" id="theme-label-dark">🌙</span>
+        <button type="button" id="theme-toggle" class="theme-toggle" role="switch" aria-checked="false" aria-label="Přepnout světlý nebo tmavý vzhled">
+          <span class="theme-toggle__track"><span class="theme-toggle__thumb"></span></span>
+        </button>
+        <span class="theme-label" id="theme-label-light">☀️</span>
+      </div>
     </header>
     <div class="container">
       <section>
@@ -22,11 +32,11 @@
         <h3 style="margin:16px 0 8px">Uživatelé</h3>
         <div id="admin-users"></div>
         <h3 style="margin:24px 0 8px">Přidat film</h3>
-        <div style="background:#1a1a2e;padding:20px;border-radius:10px;max-width:500px">
-          <input id="a-title" placeholder="Název" style="width:100%;padding:8px;margin:4px 0;background:#0f3460;border:none;color:#eee;border-radius:6px">
-          <input id="a-year" placeholder="Rok" style="width:100%;padding:8px;margin:4px 0;background:#0f3460;border:none;color:#eee;border-radius:6px">
-          <textarea id="a-desc" placeholder="Popis" style="width:100%;padding:8px;margin:4px 0;background:#0f3460;border:none;color:#eee;border-radius:6px;height:80px"></textarea>
-          <select id="a-rating" style="width:100%;padding:8px;margin:4px 0;background:#0f3460;border:none;color:#eee;border-radius:6px">
+        <div class="admin-form-box">
+          <input id="a-title" placeholder="Název">
+          <input id="a-year" placeholder="Rok">
+          <textarea id="a-desc" placeholder="Popis"></textarea>
+          <select id="a-rating">
             <option value="0">Hodnocení: 0</option>
             <option value="1">Hodnocení: 1</option>
             <option value="2">Hodnocení: 2</option>
@@ -43,7 +53,7 @@
         </div>
       </section>
     </div>
-    <script src="/static/app.js"></script>
+    <script src="/static/app.js?v=theme-1"></script>
     <script>document.addEventListener('DOMContentLoaded', ()=>loadAdmin());</script>
   </body>
 </html>

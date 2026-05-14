@@ -4,6 +4,41 @@ const API = window.location.origin || '';
 let currentUser = JSON.parse(localStorage.getItem('user') || 'null');
 let selectedStarScore = 0;
 
+const THEME_KEY = 'filmapp-theme';
+
+function getStoredTheme() {
+  try {
+    const t = localStorage.getItem(THEME_KEY);
+    return t === 'light' || t === 'dark' ? t : 'dark';
+  } catch {
+    return 'dark';
+  }
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const btn = document.getElementById('theme-toggle');
+  if (btn) {
+    btn.setAttribute('aria-checked', theme === 'light' ? 'true' : 'false');
+    btn.classList.toggle('is-light', theme === 'light');
+  }
+}
+
+function initThemeToggle() {
+  const btn = document.getElementById('theme-toggle');
+  if (!btn) return;
+  applyTheme(getStoredTheme());
+  btn.addEventListener('click', () => {
+    const next = getStoredTheme() === 'dark' ? 'light' : 'dark';
+    try {
+      localStorage.setItem(THEME_KEY, next);
+    } catch {
+      /* ignore */
+    }
+    applyTheme(next);
+  });
+}
+
 function escapeHtml(text) {
   if (!text) return '';
   return text.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
@@ -43,7 +78,7 @@ async function fetchJson(path, opts) {
 
 function renderFilms(gridId, films, append = false) {
   const grid = document.getElementById(gridId); if (!grid) return;
-  if (!films || !films.length) { grid.innerHTML = "<p style='color:#888'>Nic nenalezeno.</p>"; return; }
+  if (!films || !films.length) { grid.innerHTML = "<p class='ui-soft'>Nic nenalezeno.</p>"; return; }
   const html = films.map(f => `
     <div class="film-card" onclick="openModal(${f.id})">
       <img src="${f.poster_url || ''}" alt="${f.title}" onerror="this.src='https://via.placeholder.com/180x270?text=No+Image'" />
@@ -133,7 +168,7 @@ async function loadFilms(forceReset = false) {
     }
   } catch (err) {
     const grid = document.getElementById('films-grid');
-    if (grid) grid.innerHTML = `<p style='color:#f55'>Chyba: ${err.message}</p>`;
+    if (grid) grid.innerHTML = `<p class="ui-error">Chyba: ${err.message}</p>`;
     const loadMoreBtn = document.getElementById('load-more-btn');
     if(loadMoreBtn) loadMoreBtn.style.display = 'none';
   }
@@ -203,7 +238,7 @@ async function openModal(id) {
           <span class="review-user">${escapeHtml(r.username)}</span>
           <span class="review-date">${new Date(r.updated_at).toLocaleDateString('cs-CZ')}</span>
         </div>
-        <p>${r.comment ? escapeHtml(r.comment) : '<span style="color:#777">Žádný komentář</span>'}</p>
+        <p>${r.comment ? escapeHtml(r.comment) : '<span class="ui-soft">Žádný komentář</span>'}</p>
       </div>
     `).join('');
 
@@ -213,18 +248,18 @@ async function openModal(id) {
     <img class="film-modal-poster" src="${film.poster_url||''}" alt="${film.title}" onerror="this.src='https://via.placeholder.com/200x300?text=No+Image'" />
     <div class="film-modal-info">
       <h2>${escapeHtml(film.title)}</h2>
-      <p style="color:#aaa;margin:6px 0">${film.year || ''} &nbsp; ⭐ ${(film.rating||0).toFixed(1)}</p>
+      <p class="modal-subline">${film.year || ''} &nbsp; ⭐ ${(film.rating||0).toFixed(1)}</p>
       <div>${(film.genres||[]).map(g=>`<span class="badge">${normalizeGenre(g)}</span>`).join('')}</div>
-      <p style="margin-top:12px;font-size:.9rem;color:#ccc">${escapeHtml(film.description||'')}</p>
+      <p class="modal-desc">${escapeHtml(film.description||'')}</p>
       <div class="soundtrack-section">
         <h4>Soundtrack</h4>
-        <div id="soundtrack-list"><p style="color:#888">Načítám soundtrack...</p></div>
+        <div id="soundtrack-list"><p class="ui-soft">Načítám soundtrack...</p></div>
       </div>
-      ${film.cast && film.cast.length ? `<div class="film-cast"><h4>Herecké obsazení</h4>${film.cast.slice(0,10).map(p => `<div class="cast-item"><strong>${escapeHtml(p.person_name)}</strong>${p.character ? ` jako ${escapeHtml(p.character)}` : ''}</div>`).join('')}</div>` : '<div class="film-cast"><h4>Herecké obsazení</h4><p style="color:#888">Žádné herce jsme nenašli.</p></div>'}
+      ${film.cast && film.cast.length ? `<div class="film-cast"><h4>Herecké obsazení</h4>${film.cast.slice(0,10).map(p => `<div class="cast-item"><strong>${escapeHtml(p.person_name)}</strong>${p.character ? ` jako ${escapeHtml(p.character)}` : ''}</div>`).join('')}</div>` : '<div class="film-cast"><h4>Herecké obsazení</h4><p class="ui-soft">Žádné herce jsme nenašli.</p></div>'}
       ${film.crew && film.crew.length ? `<div class="film-crew"><h4>Klíčový tým</h4>${film.crew.slice(0,8).map(p => `<div class="crew-item"><strong>${escapeHtml(p.person_name)}</strong>${p.job ? ` • ${escapeHtml(p.job)}` : ''}${p.department ? ` (${escapeHtml(p.department)})` : ''}</div>`).join('')}</div>` : ''}
       ${currentUser ? `
-        <div class="watchlist-panel" style="margin:16px 0;padding:12px;border:1px solid #1f3a5f;border-radius:8px;background:#081b2d;">
-          <div id="modal-status-msg" style="margin-bottom:12px;color:#fff;">${statusLabel}</div>
+        <div class="watchlist-panel">
+          <div id="modal-status-msg" style="margin-bottom:12px">${statusLabel}</div>
           <div style="display:flex;flex-wrap:wrap;gap:10px;">
             <button class="btn wl-btn" data-status="want" onclick="event.stopPropagation(); updateWatchlistStatus(${film.id}, 'want')">Chci vidět</button>
             <button class="btn wl-btn" data-status="seen" onclick="event.stopPropagation(); updateWatchlistStatus(${film.id}, 'seen')">Viděl jsem</button>
@@ -232,7 +267,7 @@ async function openModal(id) {
             <button class="btn btn-red wl-btn" data-status="none" onclick="event.stopPropagation(); updateWatchlistStatus(${film.id}, null)">Odebrat ze seznamu</button>
           </div>
         </div>
-      ` : `<div style="color:#aaa;margin-top:16px">Přihlas se pro stav filmu a správu seznamu.</div>`}
+      ` : `<div class="ui-muted" style="margin-top:16px">Přihlas se pro stav filmu a správu seznamu.</div>`}
       <div class="rating-panel">
         ${film.community_rating ? `<div class="community-summary">Uživatelé: <strong>${film.community_rating.toFixed(1)}/10</strong> (${film.review_count} komentář${film.review_count === 1 ? '' : 'ů'})</div>` : `<div class="community-summary">Buď první, kdo ohodnotí tento film.</div>`}
         ${currentUser ? `
@@ -245,7 +280,7 @@ async function openModal(id) {
             <button class="btn btn-blue" onclick="submitRating(${film.id})">Uložit komentář</button>
             <div id="rating-msg" class="rating-msg"></div>
           </div>
-        ` : `<div style="color:#aaa;margin-top:16px">Přihlas se pro hodnocení a komentáře.</div>`}
+        ` : `<div class="ui-muted" style="margin-top:16px">Přihlas se pro hodnocení a komentáře.</div>`}
         ${reviewCards ? `<div class="review-list">${reviewCards}</div>` : ''}
       </div>
       ${film.trailer_key ? `<iframe width="100%" height="400" src="https://www.youtube.com/embed/${film.trailer_key}" frameborder="0" allowfullscreen></iframe>` : ''}
@@ -266,20 +301,20 @@ async function openModal(id) {
 async function loadSoundtrack(filmId) {
   const list = document.getElementById('soundtrack-list');
   if (!list) return;
-  list.innerHTML = '<p style="color:#888">Načítám soundtrack...</p>';
+  list.innerHTML = '<p class="ui-soft">Načítám soundtrack...</p>';
   try {
     const tracks = await fetchJson(`/films/${filmId}/soundtrack`);
     if (!Array.isArray(tracks) || tracks.length === 0) {
-      list.innerHTML = '<p style="color:#888">Soundtrack nenalezen.</p>';
+      list.innerHTML = '<p class="ui-soft">Soundtrack nenalezen.</p>';
       return;
     }
     list.innerHTML = tracks.map(track => {
       const title = escapeHtml(track.song_title || '');
       const artist = escapeHtml(track.artist || '');
-      return `<div class="track-item">${title}${artist ? ` <span style="color:#aaa">• ${artist}</span>` : ''}</div>`;
+      return `<div class="track-item">${title}${artist ? ` <span class="ui-muted">• ${artist}</span>` : ''}</div>`;
     }).join('');
   } catch (err) {
-    list.innerHTML = '<p style="color:#f55">Nepodařilo se načíst soundtrack.</p>';
+    list.innerHTML = '<p class="ui-error">Nepodařilo se načíst soundtrack.</p>';
   }
 }
 
@@ -320,10 +355,14 @@ async function submitRating(filmId) {
   const data = await resp.json();
   const msg = document.getElementById('rating-msg');
   if (!resp.ok) {
-    if (msg) msg.textContent = data.detail || 'Chyba při ukládání hodnocení';
+    if (msg) {
+      msg.textContent = data.detail || 'Chyba při ukládání hodnocení';
+      msg.classList.remove('ui-success');
+      msg.classList.add('ui-error');
+    }
     return;
   }
-  if (msg) { msg.textContent = data.message || 'Uloženo'; msg.style.color = '#8f8'; }
+  if (msg) { msg.textContent = data.message || 'Uloženo'; msg.classList.remove('ui-error'); msg.classList.add('ui-success'); }
   await openModal(filmId);
 }
 
@@ -359,13 +398,14 @@ async function register(){ const u = document.getElementById('r-user')?.value; c
 
 function logout(){ currentUser = null; localStorage.removeItem('user'); const ui = document.getElementById('user-info'); if(ui) ui.textContent='Nepřihlášen'; const lb = document.getElementById('logout-btn'); if(lb) lb.style.display='none'; const lbtn = document.getElementById('login-btn'); if(lbtn) lbtn.style.display='inline'; const al = document.getElementById('admin-link'); if(al) al.style.display='none'; window.location='/'; }
 
-async function loadAdmin(){ if(!currentUser || currentUser.role!=='admin'){ alert('Nemáš přístup!'); return;} const users = await fetchJson('/admin/users'); const container = document.getElementById('admin-users'); if(!container) return; container.innerHTML = users.map(u=>`<div style="background:#0f3460;padding:10px;border-radius:6px;margin:6px 0;display:flex;align-items:center;gap:12px"><span>${u.username} (${u.role})</span>${u.banned?'<span style="color:#e94560">BANNED</span>':''}${u.role!=='admin'?`<button class="btn btn-red" onclick="banUser(${u.id}, ${!u.banned})">${u.banned? 'Odblokovat' : 'Zablokovat'}</button>`:''}</div>`).join(''); }
+async function loadAdmin(){ if(!currentUser || currentUser.role!=='admin'){ alert('Nemáš přístup!'); return;} const users = await fetchJson('/admin/users'); const container = document.getElementById('admin-users'); if(!container) return; container.innerHTML = users.map(u=>`<div class="admin-user-row"><span>${u.username} (${u.role})</span>${u.banned?'<span class="banned-tag">BANNED</span>':''}${u.role!=='admin'?`<button class="btn btn-red" onclick="banUser(${u.id}, ${!u.banned})">${u.banned? 'Odblokovat' : 'Zablokovat'}</button>`:''}</div>`).join(''); }
 
 async function banUser(userId, ban){ await fetch(`/admin/ban/${userId}`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ban})}); loadAdmin(); }
 
 async function adminAddFilm(){ const title = document.getElementById('a-title')?.value; const year = parseInt(document.getElementById('a-year')?.value); const desc = document.getElementById('a-desc')?.value; const ratingInput = document.getElementById('a-rating')?.value; const rating = ratingInput === '' ? 0 : Number(ratingInput); if (!Number.isInteger(rating) || rating < 0 || rating > 10) { alert('Hodnocení musí být celé číslo od 0 do 10.'); return; } await fetch('/admin/films', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title, year, description: desc, rating})}); alert('Film přidán!'); }
 
 document.addEventListener('DOMContentLoaded', ()=>{
+  initThemeToggle();
   fetchJson('/genres').then(gs=>{ const sel = document.getElementById('f-genre'); if(sel) gs.forEach(g=> sel.innerHTML += `<option value="${g.name}">${normalizeGenre(g.name)}</option>`); });
   // Populate year select from backend stats (years with counts)
   fetchJson('/stats').then(s=>{
