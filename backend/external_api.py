@@ -5,7 +5,7 @@ from .database import get_db  # Pro ukládání dat do DB
 
 
 def fetch_tmdb_credits(tmdb_id: int):
-    """Načte herce a tým z TMDB - vrátí dict s 'cast' a 'crew', nebo None."""
+    """Načte herce a filmový štáb z TMDB API v českém jazyce."""
     if not TMDB_API_KEY or TMDB_API_KEY.startswith("VLOZ"):
         print("Nebyl k dispozici platny TMDB API klic. Nelze nacist herce a stab.")
         return None  # Chybějící API klíč
@@ -25,7 +25,7 @@ def fetch_tmdb_credits(tmdb_id: int):
 
 
 def fetch_tmdb_external_ids(tmdb_id: int):
-    """Načtení externích ID z TMDB."""
+    """Získá externí identifikátory filmu, jako je IMDb ID, pro další vyhledávání."""
     if not TMDB_API_KEY or TMDB_API_KEY.startswith("VLOZ"):
         return None
     try:
@@ -44,7 +44,7 @@ def fetch_tmdb_external_ids(tmdb_id: int):
 
 
 def fetch_tmdb_movie_details(tmdb_id: int):
-    """Načtení detailů filmu z TMDB."""
+    """Stáhne základní detaily o filmu v angličtině z TMDB API."""
     if not TMDB_API_KEY or TMDB_API_KEY.startswith("VLOZ"):
         return None
     try:
@@ -63,7 +63,7 @@ def fetch_tmdb_movie_details(tmdb_id: int):
 
 
 def musicbrainz_get(path: str, params: dict):
-    """Univerzální volání MusicBrainz API - pro hledání soundtracků."""
+    """Provede obecný HTTP požadavek na MusicBrainz API s povinnou hlavičkou."""
     try:
         resp = requests.get(
             f"{MUSICBRAINZ_BASE}/{path}",
@@ -81,7 +81,7 @@ def musicbrainz_get(path: str, params: dict):
 
 
 def search_musicbrainz_release(imdb_id: str = None, title: str = None, year: int = None):
-    """Hledá release podle IMDb nebo názvu filmu."""
+    """Vyhledá konkrétní soundtrackové album na MusicBrainz podle IMDb ID nebo názvu."""
     query = None
     if imdb_id:
         query = f'imdbid:"{imdb_id}" AND secondarytype:Soundtrack'
@@ -101,7 +101,7 @@ def search_musicbrainz_release(imdb_id: str = None, title: str = None, year: int
 
 
 def fetch_musicbrainz_release_tracks(release_id: str):
-    """Načtení skladeb z MusicBrainz release."""
+    """Stáhne a zformátuje seznam skladeb a jejich interpretů z hudebního alba."""
     data = musicbrainz_get(f"release/{release_id}", {"inc": "recordings", "fmt": "json"})
     if not data:
         return None
@@ -126,7 +126,7 @@ def fetch_musicbrainz_release_tracks(release_id: str):
 
 
 def enrich_soundtracks_with_musicbrainz(film_id: int, title: str, tmdb_id: int = None):
-    """Obohacuje soundtrack filmu o data z MusicBrainz."""
+    """Dohledá soundtrack pomocí různých kombinací údajů a uloží skladby do databáze."""
     imdb_id = None
     tmdb_original_title = None
     tmdb_year = None
@@ -170,7 +170,7 @@ def enrich_soundtracks_with_musicbrainz(film_id: int, title: str, tmdb_id: int =
 
 
 def save_credits(film_id: int, credits: dict):
-    """Uloží cast a crew do databáze."""
+    """Uloží seznam herců a členů štábu do lokální databáze."""
     if not credits:
         return
     conn = get_db()
@@ -194,7 +194,7 @@ def save_credits(film_id: int, credits: dict):
 
 
 def get_credits(film_id: int, tmdb_id: int = None):
-    """Načte cast a crew z databáze nebo TMDB."""
+    """Načte tvůrce z databáze, a pokud chybí, stáhne je z TMDB a nacachuje."""
     conn = get_db()
     rows = conn.execute(
         """SELECT role_type, person_name, character, job, department, credit_order
